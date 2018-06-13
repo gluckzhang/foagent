@@ -37,15 +37,21 @@ static void JNICALL callbackException(jvmtiEnv *jvmti_env, JNIEnv* env, jthread 
             printf("ERROR: GetMethodName!\n");
             return;
         }
-        if(strcmp(name, "main") == 0) {
-            printf("In Agent: Got an exception from Method: %s\n" ,name );
-        }
+        printf("In Agent: Got an exception from Method: %s, %s\n" ,name, sig);
+        fflush(stdout);
+        jclass declaring_class;
+        error = gb_jvmti->GetMethodDeclaringClass(method, &declaring_class);
+        error = gb_jvmti->GetClassSignature(declaring_class, &sig, &gsig);
+        printf("In Agent: This exception is located in class: %s\n", sig);
+        fflush(stdout);
 
         if (catch_method == 0) {
             printf("In Agent: This exception is not handled by business code");
+            fflush(stdout);
         } else {
             error = gb_jvmti->GetMethodName(catch_method, &name, &sig, &gsig);
             printf("In Agent: This exception is handled by: %s\n", name);
+            fflush(stdout);
         }
     }
     exit_critical_section(gb_jvmti);
@@ -67,6 +73,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
     gb_capa.can_generate_exception_events = 1;
     gb_capa.can_generate_vm_object_alloc_events = 1;
     gb_capa.can_tag_objects = 1; 
+    gb_capa.can_get_line_numbers = 1;
 
     error = gb_jvmti->AddCapabilities(&gb_capa);
 
