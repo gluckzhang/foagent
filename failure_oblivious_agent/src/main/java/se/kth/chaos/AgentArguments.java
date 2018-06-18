@@ -20,7 +20,7 @@ public class AgentArguments {
     public AgentArguments(String args) {
         Map<String, String> configuration = argumentMap(args == null ? "" : args);
         this.tcIndex = Integer.valueOf(configuration.getOrDefault("tcindex", "-1"));
-        this.operationMode = OperationMode.fromLowerCase(configuration.getOrDefault("mode", OperationMode.ANALYZETC.name()));
+        this.operationMode = OperationMode.fromLowerCase(configuration.getOrDefault("mode", OperationMode.FO.name()));
         this.filter = new FilterByClassAndMethodName(configuration.getOrDefault("filter", ".*"));
         this.configFile = configuration.getOrDefault("config", null);
         this.memcachedHost = configuration.getOrDefault("memcachedHost", "localhost");
@@ -61,7 +61,7 @@ public class AgentArguments {
             InputStream inputStream = new FileInputStream(this.configFile);
             p.load(inputStream);
             this.tcIndex = Integer.valueOf(p.getProperty("tcindex", "-1"));
-            this.operationMode = OperationMode.fromLowerCase(p.getProperty("mode", OperationMode.ANALYZETC.name()));
+            this.operationMode = OperationMode.fromLowerCase(p.getProperty("mode", OperationMode.FO.name()));
             this.filter = new FilterByClassAndMethodName(p.getProperty("filter", ".*"));
             this.memcachedHost = p.getProperty("memcachedHost", "localhost");
             this.memcachedPort = Integer.valueOf(p.getProperty("memcachedPort", "11211"));
