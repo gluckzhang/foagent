@@ -4,6 +4,7 @@ import jdk.internal.org.objectweb.asm.*;
 import jdk.internal.org.objectweb.asm.tree.ClassNode;
 import jdk.internal.org.objectweb.asm.util.CheckClassAdapter;
 
+import java.io.*;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
@@ -46,6 +47,18 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
 //                        method.accept(foClassVisitor);
 //                    });
                 classReader.accept(classVisitor, 0);
+
+                // write into a class file to see whether it is correct
+                /*
+                try {
+                    DataOutputStream dout = new DataOutputStream(new FileOutputStream(new File("AppInstrumented.class")));
+                    dout.write(classWriter.toByteArray());
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                */
                 break;
 	        default:
 	            // nothing now
@@ -117,32 +130,32 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
         }
 
         @Override
-        public void visitMaxs(int maxStack, int maxLocals) {
+        public void visitInsn(int opcode) {
+            if ((opcode >= IRETURN && opcode <= RETURN) || opcode == ATHROW) {
+                // closing the try block and opening the catch block
+                if (methodName.equals("throwNPE")) {
+                    // closing the try block
+                    visitLabel(lTryBlockEnd);
 
-            // closing the try block and opening the catch block
-            if (methodName.equals("throwNPE")) {
-                // closing the try block
-                visitLabel(lTryBlockEnd);
+                    // when here, no exception was thrown, so skip exception handler
+                    visitJumpInsn(GOTO, lTryBlockEnd);
 
-                // when here, no exception was thrown, so skip exception handler
-                visitJumpInsn(GOTO, lCatchBlockEnd);
+                    // exception handler starts here, with RuntimeException stored on stack
+                    visitLabel(lCatchBlockStart);
 
-                // exception handler starts here, with RuntimeException stored on stack
-                visitLabel(lCatchBlockStart);
+                    // store the RuntimeException in local variable
+                    visitVarInsn(ASTORE, 1);
 
-                // store the RuntimeException in local variable
-                visitVarInsn(ASTORE, 2);
+                    // here we could for example do e.printStackTrace()
+                    visitVarInsn(ALOAD, 1); // load it
+                    visitMethodInsn(INVOKEVIRTUAL, "java/lang/Exception", "printStackTrace", "()V", false);
 
-                // here we could for example do e.printStackTrace()
-                visitVarInsn(ALOAD, 2); // load it
-                visitMethodInsn(INVOKEVIRTUAL, "java/lang/Exception", "printStackTrace", "()V", false);
-
-                // exception handler ends here:
-                visitLabel(lCatchBlockEnd);
+                    // exception handler ends here:
+                    visitLabel(lCatchBlockEnd);
+                }
             }
 
-            super.visitMaxs(maxStack, maxLocals);
-            super.visitEnd();
+            super.visitInsn(opcode);
         }
 
     }

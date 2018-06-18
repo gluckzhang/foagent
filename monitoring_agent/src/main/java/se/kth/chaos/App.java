@@ -14,20 +14,9 @@ public class App {
 
         MayThrowException mte = new MayThrowException();
         try {
-            Thread.currentThread().sleep(5000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        try {
             mte.throwNPE();
         } catch (Exception e) {
             System.out.println("In Java: Got an exception in java code");
-        }
-
-        try {
-            Thread.currentThread().sleep(5000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
 
         mte.throwNPE();
