@@ -14,9 +14,23 @@
 #include <stdlib.h>
 #include <jni_md.h>
 
+using namespace std;
+
 static jvmtiEnv *gb_jvmti = NULL;
 static jvmtiCapabilities gb_capa;
 static jrawMonitorID gb_lock;
+
+/*
+ * Case Sensitive Implementation of startsWith()
+ * It checks if the string 'mainStr' starts with given string 'toMatch'
+ */
+static bool startsWith(string mainStr, string toMatch) {
+    // std::string::find returns 0 if toMatch is found at starting
+    if(mainStr.find(toMatch) == 0)
+        return true;
+    else
+        return false;
+}
 
 static void enter_critical_section(jvmtiEnv *jvmti) {
     jvmtiError error;
@@ -34,25 +48,32 @@ static void JNICALL callbackException(jvmtiEnv *jvmti_env, JNIEnv* env, jthread 
         char *name,*sig,*gsig;
         jvmtiError error = gb_jvmti->GetMethodName(method, &name, &sig, &gsig);
         if (error != JVMTI_ERROR_NONE) {
-            printf("ERROR: GetMethodName!\n");
+            cout << "ERROR: GetMethodName!\n" << endl;
             return;
         }
-        printf("In Agent: Got an exception from Method: %s, %s\n" ,name, sig);
-        fflush(stdout);
+
         jclass declaring_class;
         error = gb_jvmti->GetMethodDeclaringClass(method, &declaring_class);
         error = gb_jvmti->GetClassSignature(declaring_class, &sig, &gsig);
-        printf("In Agent: This exception is located in class: %s\n", sig);
-        fflush(stdout);
+
+        if (startsWith(sig, "Ljava/") || startsWith(sig, "Lsun/")) {
+            return;
+        }
+
+        string className = sig;
+        cout << "[Monitoring Agent] Got an exception from Method: " << className.substr(1, className.length() - 2) << "/" << name << endl;
 
         if (catch_method == 0) {
-            printf("In Agent: This exception is not handled by business code");
-            fflush(stdout);
+            cout << "[Monitoring Agent] This exception is not handled by business code" << endl;
         } else {
             error = gb_jvmti->GetMethodName(catch_method, &name, &sig, &gsig);
-            printf("In Agent: This exception is handled by: %s\n", name);
-            fflush(stdout);
+            error = gb_jvmti->GetMethodDeclaringClass(catch_method, &declaring_class);
+            error = gb_jvmti->GetClassSignature(declaring_class, &sig, &gsig);
+            className = sig;
+            cout << "[Monitoring Agent] This exception is handled by: " << className.substr(1, className.length() - 2) << "/" << name << endl;
         }
+        
+        fflush(stdout);
     }
     exit_critical_section(gb_jvmti);
 }
@@ -63,7 +84,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 
     jint result = jvm->GetEnv((void **) &gb_jvmti, JVMTI_VERSION);
     if (result != JNI_OK || gb_jvmti == NULL) {
-        printf("ERROR: Unable to access JVMTI!\n");
+        cout << "ERROR: Unable to access JVMTI!" << endl;
     }
     
     memset(&gb_capa, 0, sizeof(jvmtiCapabilities));
@@ -78,7 +99,7 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
     error = gb_jvmti->AddCapabilities(&gb_capa);
 
     if(error != JVMTI_ERROR_NONE) {
-        printf("ERROR: Can't get JVMTI capabilities");
+        cout << "ERROR: Can't get JVMTI capabilities" << endl;
         return JNI_ERR;
     }
 
@@ -87,13 +108,13 @@ JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM *jvm, char *options, void *reserved) 
 
     error = gb_jvmti->SetEventCallbacks(&callbacks, sizeof(callbacks));
     if(error != JVMTI_ERROR_NONE) {
-        printf("ERROR: Can't set jvmti callback!");
+        cout << "ERROR: Can't set jvmti callback!";
         return JNI_ERR;
     }
 
     error = gb_jvmti->CreateRawMonitor("agent data", &gb_lock);
     if(error != JVMTI_ERROR_NONE) {
-        printf("ERROR: Can't create raw monitor!");
+        cout << "ERROR: Can't create raw monitor!" << endl;
         return JNI_ERR;
     }
 
