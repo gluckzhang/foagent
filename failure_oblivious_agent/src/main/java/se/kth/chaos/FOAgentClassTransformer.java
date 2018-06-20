@@ -20,8 +20,7 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
     }
 
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined,
-        ProtectionDomain protectionDomain, byte[] classFileBuffer
-    ) throws IllegalClassFormatException {
+        ProtectionDomain protectionDomain, byte[] classFileBuffer) {
         return meddle(classFileBuffer);
     }
 
@@ -37,19 +36,12 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
         switch (arguments.operationMode()) {
             case FO:
                 classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-                FoClassVisitor foClassVisitor = new FoClassVisitor(ASM4, classWriter);
+                FoClassVisitor foClassVisitor = new FoClassVisitor(ASM4, classWriter, arguments);
                 ClassVisitor classVisitor = new CheckClassAdapter(foClassVisitor);
-
-//                classNode.methods.stream()
-//                    .filter(method -> !method.name.startsWith("<"))
-//                    .filter(method -> arguments.filter().matches(classNode.name, method.name))
-//                    .forEach(method -> {
-//                        method.accept(foClassVisitor);
-//                    });
                 classReader.accept(classVisitor, 0);
 
                 // write into a class file to see whether it is correct
-                /*
+                //*
                 try {
                     DataOutputStream dout = new DataOutputStream(new FileOutputStream(new File("AppInstrumented.class")));
                     dout.write(classWriter.toByteArray());
@@ -58,7 +50,7 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                */
+                //*/
                 break;
 	        default:
 	            // nothing now
@@ -68,26 +60,36 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
         return classWriter != null ? classWriter.toByteArray() : classFileBuffer;
     }
 
-    public static class FoClassVisitor extends ClassVisitor {
+    public class FoClassVisitor extends ClassVisitor {
         private int api;
+        private String className;
+        private AgentArguments arguments;
 
-        public FoClassVisitor(int api, ClassWriter cv) {
+        public FoClassVisitor(int api, ClassWriter cv, AgentArguments arguments) {
             super(api, cv);
+
             this.api = api;
+            this.arguments = arguments;
+        }
+
+        @Override
+        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+            this.className = name;
+            super.visit(version, access, name, signature, superName, interfaces);
         }
 
         @Override
         public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-
             MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
-
-            FoMethodVisitor foMethodVisitor = new FoMethodVisitor(api, mv, name);
+            FoMethodVisitor foMethodVisitor = new FoMethodVisitor(api, mv, name, className, arguments);
             return foMethodVisitor;
         }
     }
 
-    public static class FoMethodVisitor extends MethodVisitor {
+    public class FoMethodVisitor extends MethodVisitor {
+        private String className;
         private String methodName;
+        private AgentArguments arguments;
 
         // below label variables are for adding try/catch blocks in instrumented code.
         private Label lTryBlockStart;
@@ -102,9 +104,11 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
          * @param mv: MethodVisitor obj
          * @param methodName : methodName to make sure adding try catch block for the specific method.
          */
-        public FoMethodVisitor(int api, MethodVisitor mv, String methodName) {
+        public FoMethodVisitor(int api, MethodVisitor mv, String methodName, String className, AgentArguments arguments) {
             super(api, mv);
+            this.className = className;
             this.methodName = methodName;
+            this.arguments = arguments;
         }
 
         // We want to add try/catch block for the entire code in the method
@@ -113,27 +117,25 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
         public void visitCode() {
             super.visitCode();
 
-            if (methodName.equals("throwNPE")) {
+            if (!methodName.startsWith("<") && arguments.filter().matches(className, methodName)) {
                 lTryBlockStart = new Label();
                 lTryBlockEnd = new Label();
                 lCatchBlockStart = new Label();
                 lCatchBlockEnd = new Label();
 
                 // set up try-catch block for RuntimeException
-                visitTryCatchBlock(lTryBlockStart, lTryBlockEnd,
-                        lCatchBlockStart, "java/lang/Exception");
+                visitTryCatchBlock(lTryBlockStart, lTryBlockEnd, lCatchBlockStart, "java/lang/Exception");
 
                 // started the try block
                 visitLabel(lTryBlockStart);
             }
-
         }
 
         @Override
         public void visitInsn(int opcode) {
-            if ((opcode >= IRETURN && opcode <= RETURN) || opcode == ATHROW) {
-                // closing the try block and opening the catch block
-                if (methodName.equals("throwNPE")) {
+            if (!methodName.startsWith("<") && arguments.filter().matches(className, methodName)) {
+                if ((opcode >= IRETURN && opcode <= RETURN) || opcode == ATHROW) {
+                    // closing the try block and opening the catch block
                     // closing the try block
                     visitLabel(lTryBlockEnd);
 
@@ -154,7 +156,6 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
                     visitLabel(lCatchBlockEnd);
                 }
             }
-
             super.visitInsn(opcode);
         }
 
