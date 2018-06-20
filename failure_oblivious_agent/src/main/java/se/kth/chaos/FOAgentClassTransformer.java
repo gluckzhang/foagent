@@ -41,7 +41,7 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
                 classReader.accept(classVisitor, 0);
 
                 // write into a class file to see whether it is correct
-                //*
+                /*
                 try {
                     DataOutputStream dout = new DataOutputStream(new FileOutputStream(new File("AppInstrumented.class")));
                     dout.write(classWriter.toByteArray());

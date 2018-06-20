@@ -8,9 +8,11 @@
 #include <string>
 #include <cstring>
 #include <iostream>
+#include <fstream>
 #include <list>
 #include <map>
 #include <set>
+#include <time.h>
 #include <stdlib.h>
 #include <jni_md.h>
 
@@ -19,6 +21,7 @@ using namespace std;
 static jvmtiEnv *gb_jvmti = NULL;
 static jvmtiCapabilities gb_capa;
 static jrawMonitorID gb_lock;
+static string logfileName = "monitoring_agent.log";
 
 /*
  * Case Sensitive Implementation of startsWith()
@@ -30,6 +33,16 @@ static bool startsWith(string mainStr, string toMatch) {
         return true;
     else
         return false;
+}
+
+static void getLocalTime(char* buf) {
+    time_t nowtime;
+    struct tm *local;
+
+    nowtime = time(NULL);
+    local = localtime(&nowtime);
+
+    strftime(buf, 80, "%Y-%m-%d %H:%M:%S", local);  
 }
 
 static void enter_critical_section(jvmtiEnv *jvmti) {
@@ -45,10 +58,14 @@ static void exit_critical_section(jvmtiEnv *jvmti) {
 static void JNICALL callbackException(jvmtiEnv *jvmti_env, JNIEnv* env, jthread thr, jmethodID method, jlocation location, jobject exception, jmethodID catch_method, jlocation catch_location) {
     enter_critical_section(gb_jvmti);
     {
+        char localTime[80];
+        ofstream logFileStream;
+        logFileStream.open(logfileName, ios::app);
+
         char *name,*sig,*gsig;
         jvmtiError error = gb_jvmti->GetMethodName(method, &name, &sig, &gsig);
         if (error != JVMTI_ERROR_NONE) {
-            cout << "ERROR: GetMethodName!\n" << endl;
+            logFileStream << "ERROR: GetMethodName!\n" << endl;
             return;
         }
 
@@ -61,19 +78,22 @@ static void JNICALL callbackException(jvmtiEnv *jvmti_env, JNIEnv* env, jthread 
         }
 
         string className = sig;
-        cout << "[Monitoring Agent] Got an exception from Method: " << className.substr(1, className.length() - 2) << "/" << name << endl;
+        getLocalTime(localTime);
+        logFileStream << "[Monitoring Agent] " << localTime << " Got an exception from Method: " << className.substr(1, className.length() - 2) << "/" << name << endl;
 
         if (catch_method == 0) {
-            cout << "[Monitoring Agent] This exception is not handled by business code" << endl;
+            logFileStream << "[Monitoring Agent] " << localTime << " This exception is not handled by business code" << endl;
         } else {
             error = gb_jvmti->GetMethodName(catch_method, &name, &sig, &gsig);
             error = gb_jvmti->GetMethodDeclaringClass(catch_method, &declaring_class);
             error = gb_jvmti->GetClassSignature(declaring_class, &sig, &gsig);
             className = sig;
-            cout << "[Monitoring Agent] This exception is handled by: " << className.substr(1, className.length() - 2) << "/" << name << endl;
+            getLocalTime(localTime);
+            logFileStream << "[Monitoring Agent] " << localTime << " This exception is handled by: " << className.substr(1, className.length() - 2) << "/" << name << endl;
         }
-        
+
         fflush(stdout);
+        logFileStream.close();
     }
     exit_critical_section(gb_jvmti);
 }
