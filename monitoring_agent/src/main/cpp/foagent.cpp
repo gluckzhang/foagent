@@ -79,6 +79,7 @@ static void JNICALL callbackException(jvmtiEnv *jvmti_env, JNIEnv *env, jthread 
             return;
         }
 
+        // get class name and exception type info
         string className = sig;
         jclass exception_class = env->GetObjectClass(exception);
         error = gb_jvmti->GetClassSignature(exception_class, &sig, &gsig);
@@ -88,7 +89,30 @@ static void JNICALL callbackException(jvmtiEnv *jvmti_env, JNIEnv *env, jthread 
         logFileStream << "[Monitoring Agent] " << localTime << " Got an exception from Method: " << className.substr(1, className.length() - 2) << "/" << name 
             << ", type: " << exceptionName.substr(1, exceptionName.length() - 2) << endl;
 
+        // get stack info
+        jint frameCount;
+        error = gb_jvmti->GetFrameCount(thr, &frameCount);
 
+        jvmtiFrameInfo frames[frameCount];
+        jint count;
+        error = gb_jvmti->GetStackTrace(thr, 0, frameCount, frames, &count);
+
+        char *frame;
+        string methodName;
+
+        for (int i = 0; i < count; i++) {
+            error = gb_jvmti->GetMethodName(frames[i].method, &frame, NULL, NULL);
+            methodName = frame;
+
+            error = gb_jvmti->GetMethodDeclaringClass(frames[i].method, &declaring_class);
+            error = gb_jvmti->GetClassSignature(declaring_class, &sig, &gsig);
+            className = sig;
+
+            logFileStream << "[Monitoring Agent] " << "Stack info " << i << ":" << className.substr(1, className.length() - 2) << "/" << methodName << endl;
+        }
+
+
+        // whether this exception is handled by business code
         if (catch_method == 0) {
             logFileStream << "[Monitoring Agent] " << localTime << " This exception is not handled by business code" << endl;
         } else {
