@@ -55,7 +55,7 @@ static void exit_critical_section(jvmtiEnv *jvmti) {
     error = jvmti->RawMonitorExit(gb_lock);
 }
 
-static void JNICALL callbackException(jvmtiEnv *jvmti_env, JNIEnv* env, jthread thr, jmethodID method, jlocation location, jobject exception, jmethodID catch_method, jlocation catch_location) {
+static void JNICALL callbackException(jvmtiEnv *jvmti_env, JNIEnv *env, jthread thr, jmethodID method, jlocation location, jobject exception, jmethodID catch_method, jlocation catch_location) {
     enter_critical_section(gb_jvmti);
     {
         char localTime[80];
@@ -80,8 +80,14 @@ static void JNICALL callbackException(jvmtiEnv *jvmti_env, JNIEnv* env, jthread 
         }
 
         string className = sig;
+        jclass exception_class = env->GetObjectClass(exception);
+        error = gb_jvmti->GetClassSignature(exception_class, &sig, &gsig);
+        string exceptionName = sig;
+
         getLocalTime(localTime);
-        logFileStream << "[Monitoring Agent] " << localTime << " Got an exception from Method: " << className.substr(1, className.length() - 2) << "/" << name << endl;
+        logFileStream << "[Monitoring Agent] " << localTime << " Got an exception from Method: " << className.substr(1, className.length() - 2) << "/" << name 
+            << ", type: " << exceptionName.substr(1, exceptionName.length() - 2) << endl;
+
 
         if (catch_method == 0) {
             logFileStream << "[Monitoring Agent] " << localTime << " This exception is not handled by business code" << endl;
