@@ -65,7 +65,7 @@ static void JNICALL callbackException(jvmtiEnv *jvmti_env, JNIEnv* env, jthread 
         char *name,*sig,*gsig;
         jvmtiError error = gb_jvmti->GetMethodName(method, &name, &sig, &gsig);
         if (error != JVMTI_ERROR_NONE) {
-            logFileStream << "ERROR: GetMethodName!\n" << endl;
+            logFileStream << "ERROR: GetMethodName!" << endl;
             return;
         }
 
@@ -74,6 +74,8 @@ static void JNICALL callbackException(jvmtiEnv *jvmti_env, JNIEnv* env, jthread 
         error = gb_jvmti->GetClassSignature(declaring_class, &sig, &gsig);
 
         if (startsWith(sig, "Ljava/") || startsWith(sig, "Lsun/")) {
+            logFileStream.close();
+            exit_critical_section(gb_jvmti);
             return;
         }
 
