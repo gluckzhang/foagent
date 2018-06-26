@@ -8,6 +8,7 @@ import getopt
 import time
 import logging
 import re
+import hashlib
 
 LOG_PATH = ''
 OUTPUTFILE = '' # default: result.csv
@@ -56,10 +57,15 @@ def print_help_info():
     print('    analyze_monitoring_log.py -l <log_file_path> [-o <outputfile>]')
     print('or: analyze_monitoring_log.py --log=<log_file_path> [--outfile=<outputfile>]')
 
+def get_md5_key(src):
+    m = hashlib.md5()
+    m.update(src.encode('UTF-8'))
+    return m.hexdigest()
+
 def analyze_log(filepath):
     finding_pattern = re.compile(r'Method: ([\w/\$\<\>]+), type: ([\w/\$]+)')
     handling_pattern = re.compile(r'is handled by: ([\w/\$]+)')
-    total_count = 0;
+    total_count = 0
     result = dict()
 
     with open(filepath, 'rt') as logfile:
@@ -77,44 +83,43 @@ def analyze_log(filepath):
                 exception = match.group(2)
                 total_count = total_count + 1
 
-                if location + exception in result:
-                    count = result[location+exception][2]
+                stackinfo = logfile.readline()
+                stack_height = 0
+                stack_layers = list()
+                while "Stack info" in stackinfo:
+                    stack_height = stack_height + 1
+                    stack_layers.append(stackinfo)
+                    stackinfo = logfile.readline()
+
+                # when while loop ends, the last line should be handling result
+                match = handling_pattern.search(stackinfo)
+                distance = 0
+                if (match):
+                    handled_by = match.group(1)
+                    for layer in stack_layers:
+                        if match.group(1) in layer:
+                            break
+                        else:
+                            distance = distance + 1
+                else:
+                    handled_by = "not handled"
+
+                key = get_md5_key(location + exception + handled_by)
+                if key in result:
+                    count = result[key][2]
                     count = count + 1
-                    result[location+exception][2] = count
+                    result[key][2] = count
                 else:
                     count = 1
-                    result[location+exception] = list()
-                    result[location+exception].append(location)
-                    result[location+exception].append(exception)
-                    result[location+exception].append(count)
-                    result[location+exception].append(handled_by)
-                    result[location+exception].append(distance)
-                    result[location+exception].append(stack_height)
-
-            stackinfo = logfile.readline()
-            stack_height = 0
-            stack_layers = list()
-            while "Stack info" in stackinfo:
-                stack_height = stack_height + 1
-                stack_layers.append(stackinfo)
-                stackinfo = logfile.readline()
-
-            # when while loop ends, the last line should be handling result
-            match = handling_pattern.search(stackinfo)
-            distance = 0
-            if (match):
-                handled_by = match.group(1)
-                for layer in stack_layers:
-                    if match.group(1) in layer:
-                        break
-                    else:
-                        distance = distance + 1
+                    result[key] = list()
+                    result[key].append(location)
+                    result[key].append(exception)
+                    result[key].append(count)
+                    result[key].append(handled_by)
+                    result[key].append(distance)
+                    result[key].append(stack_height)
             else:
-                handled_by = "not handled"
-
-            result[location+exception][3] = handled_by
-            result[location+exception][4] = distance
-            result[location+exception][5] = stack_height
+                continue
     
     logging.info("exceptions: " + str(len(result)))
     logging.info("total count: " + str(total_count))
