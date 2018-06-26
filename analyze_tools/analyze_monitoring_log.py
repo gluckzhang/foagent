@@ -59,6 +59,7 @@ def print_help_info():
 def analyze_log(filepath):
     finding_pattern = re.compile(r'Method: ([\w/\$\<\>]+), type: ([\w/\$]+)')
     handling_pattern = re.compile(r'is handled by: ([\w/\$]+)')
+    total_count = 0;
     result = dict()
 
     with open(filepath, 'rt') as logfile:
@@ -74,6 +75,7 @@ def analyze_log(filepath):
                 match = finding_pattern.search(line)
                 location = match.group(1)
                 exception = match.group(2)
+                total_count = total_count + 1
 
                 if location + exception in result:
                     count = result[location+exception][2]
@@ -113,6 +115,10 @@ def analyze_log(filepath):
             result[location+exception][3] = handled_by
             result[location+exception][4] = distance
             result[location+exception][5] = stack_height
+    
+    logging.info("exceptions: " + str(len(result)))
+    logging.info("total count: " + str(total_count))
+
     return result
 
 def write2csv(filename, dataset):
