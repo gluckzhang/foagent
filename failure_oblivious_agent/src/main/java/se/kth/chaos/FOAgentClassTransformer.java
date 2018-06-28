@@ -35,6 +35,19 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
 
         switch (arguments.operationMode()) {
             case FO:
+                // the following implementation can't work, don't know why yet ..
+                /*
+                classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+                FoClassVisitor foClassVisitor = new FoClassVisitor(ASM4, classWriter, arguments);
+                ClassVisitor classVisitor = new CheckClassAdapter(foClassVisitor);
+                classNode.methods.stream()
+                    .filter(method -> !method.name.startsWith("<"))
+                    .filter(method -> arguments.filter().matches(classNode.name, method.name))
+                    .forEach(method -> {
+                        method.accept(classVisitor);
+                    });
+                */
+
                 classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
                 FoClassVisitor foClassVisitor = new FoClassVisitor(ASM4, classWriter, arguments);
                 ClassVisitor classVisitor = new CheckClassAdapter(foClassVisitor);
@@ -116,7 +129,6 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
         @Override
         public void visitCode() {
             super.visitCode();
-
             if (!methodName.startsWith("<") && arguments.filter().matches(className, methodName)) {
                 lTryBlockStart = new Label();
                 lTryBlockEnd = new Label();
@@ -128,6 +140,9 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
 
                 // started the try block
                 visitLabel(lTryBlockStart);
+
+                FailureObliviousPoint foPoint = new FailureObliviousPoint(className, methodName, "off");
+                ChaosMonkey.foPointsMap.put(foPoint.key, foPoint);
             }
         }
 

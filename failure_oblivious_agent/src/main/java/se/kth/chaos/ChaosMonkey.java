@@ -10,29 +10,25 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 public class ChaosMonkey {
+    public static Map<String, FailureObliviousPoint> foPointsMap = new HashMap<String, FailureObliviousPoint>();
     public static MemcachedClient memcachedClient = null;
 
-    public static void doChaos(String tcIndexInfo, String tcType, String defaultMode, String memcachedHost, int memcachedPort) throws Throwable {
-        String chaosMode = getMode(tcIndexInfo, memcachedHost, memcachedPort);
-        if (chaosMode == null) {
-            System.out.println("INFO ChaosMachine unregistered try catch found, register and use default mode: " + defaultMode);
-            registerTrycatchToMemcached(tcIndexInfo, defaultMode, memcachedHost, memcachedPort);
-            chaosMode = defaultMode;
-        }
-        if (chaosMode.equals("analyze")) {
-            printInfo(tcIndexInfo);
-        } else if (chaosMode.equals("inject")) {
-            throw throwOrDefault(tcIndexInfo, tcType);
+    public static void failureObliviousOrNot(String className, String methodName, String key, Throwable oriException) throws Throwable {
+        FailureObliviousPoint foPoint = foPointsMap.getOrDefault(key, null);
+        if (foPoint != null && foPoint.mode == "fo") {
+
+        } else {
+            throw oriException;
         }
     }
-
-    public static void throwException(String tcIndexInfo, String tcType) throws Throwable {
-        throw throwOrDefault(tcIndexInfo, tcType);
-    }
-
+    
     public static String getMode(String tcIndexInfo, String memcachedHost, int memcachedPort) {
         String mode = null;
 
@@ -61,42 +57,6 @@ public class ChaosMonkey {
 
     public static void printInfo(String tcIndexInfo) {
         System.out.println(String.format("INFO ChaosMachine try catch index %s", tcIndexInfo));
-    }
-
-    public static Throwable throwOrDefault(String tcIndexInfo, String tcType) {
-        String executedClassName = Thread.currentThread().getStackTrace()[3].getClassName();
-        String executedMethodName = Thread.currentThread().getStackTrace()[3].getMethodName();
-
-        // TryCatch Injection Info
-        System.out.println(String.format("INFO ChaosMachine injection! %s, %s @ %s", tcIndexInfo, executedMethodName, executedClassName));
-        // System.out.println("INFO ChaosMachine StackTrace Info:");
-        // new Throwable().printStackTrace();
-
-        String dotSeparatedClassName = tcType.replace("/", ".");
-        Class<?> p = null;
-        try {
-            // p = Class.forName(dotSeparatedClassName, false, ClassLoader.getSystemClassLoader());
-            // use the following instead, sometimes we cannot load the specific classes if we directly use system class loader
-            p = Thread.currentThread().getContextClassLoader().loadClass(dotSeparatedClassName);
-
-            if (Throwable.class.isAssignableFrom(p)) {
-                return (Throwable) p.newInstance();
-            } else {
-                return new ChaosMachineException(tcType);
-            }
-        } catch (IllegalAccessException e) {
-            return new ChaosMachineException(tcType);
-        } catch (InstantiationException e) {
-            // the target exception has no default constructor
-            // since lots of exception has a constructor with a string parameter, try it again
-            try {
-                return (Throwable) p.getConstructor(String.class).newInstance("INJECTED BY CHAOS MACHINE: " + dotSeparatedClassName);
-            } catch (Exception e1) {
-                return new ChaosMachineException(tcType);
-            }
-        } catch (ClassNotFoundException e) {
-            return new ChaosMachineException(tcType);
-        }
     }
 
     public static void registerTrycatchInfo(AgentArguments arguments, String memcachedKey, String value) {
