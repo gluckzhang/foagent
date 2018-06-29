@@ -28,8 +28,4 @@ class MayThrowException {
         String str = null;
         str.toString();
     }
-
-    public void testHaha() {
-        String str = null;
-    }
 }

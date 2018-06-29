@@ -1,15 +1,17 @@
 package se.kth.chaos;
 
-import jdk.internal.org.objectweb.asm.*;
+import jdk.internal.org.objectweb.asm.ClassReader;
+import jdk.internal.org.objectweb.asm.ClassVisitor;
+import jdk.internal.org.objectweb.asm.ClassWriter;
 import jdk.internal.org.objectweb.asm.tree.ClassNode;
 import jdk.internal.org.objectweb.asm.util.CheckClassAdapter;
+import se.kth.chaos.visitors.FoClassVisitor;
 
 import java.io.*;
 import java.lang.instrument.ClassFileTransformer;
-import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 
-import static jdk.internal.org.objectweb.asm.Opcodes.*;
+import static jdk.internal.org.objectweb.asm.Opcodes.ASM4;
 
 public class FOAgentClassTransformer implements ClassFileTransformer {
 
@@ -31,7 +33,7 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
 
         classReader.accept(classNode, 0);
 
-        if (classNode.name.startsWith("java/") || classNode.name.startsWith("sun/") || classNode.name.startsWith("se/kth/chaos/ChaosMonkey")) return classFileBuffer;
+        if (inWhiteList(classNode.name) || !arguments.filter().matchClassName(classNode.name)) return classFileBuffer;
 
         switch (arguments.operationMode()) {
             case FO:
@@ -42,11 +44,11 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
                 ClassVisitor classVisitor = new CheckClassAdapter(foClassVisitor);
                 classNode.methods.stream()
                     .filter(method -> !method.name.startsWith("<"))
-                    .filter(method -> arguments.filter().matches(classNode.name, method.name))
+                    .filter(method -> arguments.filter().matchFullName(classNode.name, method.name))
                     .forEach(method -> {
                         method.accept(classVisitor);
                     });
-                */
+                //*/
 
                 classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
                 FoClassVisitor foClassVisitor = new FoClassVisitor(ASM4, classWriter, arguments);
@@ -54,16 +56,7 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
                 classReader.accept(classVisitor, 0);
 
                 // write into a class file to see whether it is correct
-                /*
-                try {
-                    DataOutputStream dout = new DataOutputStream(new FileOutputStream(new File("AppInstrumented.class")));
-                    dout.write(classWriter.toByteArray());
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                //*/
+                // writeIntoClassFile(classNode.name, classWriter.toByteArray());
                 break;
 	        default:
 	            // nothing now
@@ -73,106 +66,29 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
         return classWriter != null ? classWriter.toByteArray() : classFileBuffer;
     }
 
-    public class FoClassVisitor extends ClassVisitor {
-        private int api;
-        private String className;
-        private AgentArguments arguments;
+    private boolean inWhiteList(String className) {
+        String[] whiteList = {"java/", "sun/", "se/kth/chaos/FOAgent", "se/kth/chaos/visitors"};
+        boolean result = false;
 
-        public FoClassVisitor(int api, ClassWriter cv, AgentArguments arguments) {
-            super(api, cv);
-
-            this.api = api;
-            this.arguments = arguments;
+        for (String prefix : whiteList) {
+            if (className.startsWith(prefix)) {
+                result = true;
+                break;
+            }
         }
 
-        @Override
-        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-            this.className = name;
-            super.visit(version, access, name, signature, superName, interfaces);
-        }
-
-        @Override
-        public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-            MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
-            FoMethodVisitor foMethodVisitor = new FoMethodVisitor(api, mv, name, className, arguments);
-            return foMethodVisitor;
-        }
+        return result;
     }
 
-    public class FoMethodVisitor extends MethodVisitor {
-        private String className;
-        private String methodName;
-        private AgentArguments arguments;
-
-        // below label variables are for adding try/catch blocks in instrumented code.
-        private Label lTryBlockStart;
-        private Label lTryBlockEnd;
-        private Label lCatchBlockStart;
-        private Label lCatchBlockEnd;
-
-        /**
-         * constructor for accepting methodVisitor object and methodName
-         *
-         * @param api: the ASM API version implemented by this visitor
-         * @param mv: MethodVisitor obj
-         * @param methodName : methodName to make sure adding try catch block for the specific method.
-         */
-        public FoMethodVisitor(int api, MethodVisitor mv, String methodName, String className, AgentArguments arguments) {
-            super(api, mv);
-            this.className = className;
-            this.methodName = methodName;
-            this.arguments = arguments;
+    private void writeIntoClassFile(String className, byte[] data) {
+        try {
+            String[] parts = className.split("/");
+            DataOutputStream dout = new DataOutputStream(new FileOutputStream(new File(parts[parts.length - 1] + ".class")));
+            dout.write(data);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
-        // We want to add try/catch block for the entire code in the method
-        // so adding the try/catch when the method is started visiting the code.
-        @Override
-        public void visitCode() {
-            super.visitCode();
-            if (!methodName.startsWith("<") && arguments.filter().matches(className, methodName)) {
-                lTryBlockStart = new Label();
-                lTryBlockEnd = new Label();
-                lCatchBlockStart = new Label();
-                lCatchBlockEnd = new Label();
-
-                // set up try-catch block for RuntimeException
-                visitTryCatchBlock(lTryBlockStart, lTryBlockEnd, lCatchBlockStart, "java/lang/Exception");
-
-                // started the try block
-                visitLabel(lTryBlockStart);
-
-                FailureObliviousPoint foPoint = new FailureObliviousPoint(className, methodName, "off");
-                ChaosMonkey.foPointsMap.put(foPoint.key, foPoint);
-            }
-        }
-
-        @Override
-        public void visitInsn(int opcode) {
-            if (!methodName.startsWith("<") && arguments.filter().matches(className, methodName)) {
-                if ((opcode >= IRETURN && opcode <= RETURN) || opcode == ATHROW) {
-                    // closing the try block and opening the catch block
-                    // closing the try block
-                    visitLabel(lTryBlockEnd);
-
-                    // when here, no exception was thrown, so skip exception handler
-                    visitJumpInsn(GOTO, lTryBlockEnd);
-
-                    // exception handler starts here, with RuntimeException stored on stack
-                    visitLabel(lCatchBlockStart);
-
-                    // store the RuntimeException in local variable
-                    visitVarInsn(ASTORE, 1);
-
-                    // here we could for example do e.printStackTrace()
-                    visitVarInsn(ALOAD, 1); // load it
-                    visitMethodInsn(INVOKEVIRTUAL, "java/lang/Exception", "printStackTrace", "()V", false);
-
-                    // exception handler ends here:
-                    visitLabel(lCatchBlockEnd);
-                }
-            }
-            super.visitInsn(opcode);
-        }
-
     }
 }

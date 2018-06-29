@@ -16,19 +16,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
-public class ChaosMonkey {
+public class FOAgent {
     public static Map<String, FailureObliviousPoint> foPointsMap = new HashMap<String, FailureObliviousPoint>();
     public static MemcachedClient memcachedClient = null;
 
-    public static void failureObliviousOrNot(String className, String methodName, String key, Throwable oriException) throws Throwable {
-        FailureObliviousPoint foPoint = foPointsMap.getOrDefault(key, null);
+    public static void failureObliviousOrNot(String foPointKey, Throwable oriException) throws Throwable {
+        FailureObliviousPoint foPoint = foPointsMap.getOrDefault(foPointKey, null);
         if (foPoint != null && foPoint.mode == "fo") {
-
+            // failure oblivious mode is on, so swallow this exception
+            System.out.println("INFO FOAgent failure oblivious mode is on, ignore the following exception");
+            System.out.println(String.format("INFO FOAgent %s @ %s/%s", oriException.getClass().toString(), foPoint.className, foPoint.methodName));
         } else {
             throw oriException;
         }
     }
-    
+
     public static String getMode(String tcIndexInfo, String memcachedHost, int memcachedPort) {
         String mode = null;
 
@@ -49,54 +51,39 @@ public class ChaosMonkey {
             mode = "UNKNOWN";
             String executedClassName = Thread.currentThread().getStackTrace()[3].getClassName();
             String executedMethodName = Thread.currentThread().getStackTrace()[3].getMethodName();
-            System.out.println(String.format("INFO ChaosMachine getMode time out, %s @ %s", executedMethodName, executedClassName));
+            System.out.println(String.format("INFO FOAgent getMode time out, %s @ %s", executedMethodName, executedClassName));
         }
 
         return mode;
     }
 
     public static void printInfo(String tcIndexInfo) {
-        System.out.println(String.format("INFO ChaosMachine try catch index %s", tcIndexInfo));
+        System.out.println(String.format("INFO FOAgent try catch index %s", tcIndexInfo));
     }
 
-    public static void registerTrycatchInfo(AgentArguments arguments, String memcachedKey, String value) {
-        // register to a csv file
-        File csvFile = new File(arguments.csvfilepath());
-        try {
-            PrintWriter out = null;
-            if (csvFile.exists()) {
-                out = new PrintWriter(new FileWriter(csvFile, true));
-                out.println(String.format("%s,%s,%s", memcachedKey, "no", value));
-            } else {
-                csvFile.createNewFile();
-                out = new PrintWriter(new FileWriter(csvFile));
-                out.println("tcIndex,methodName,className,isCovered,mode");
-                out.println(String.format("%s,%s,%s", memcachedKey, "no", value));
-            }
-            out.flush();
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public static void registerFailureObliviousPoint(FailureObliviousPoint foPoint, AgentArguments arguments) {
+        if (!foPointsMap.containsKey(foPoint.key)) {
+            foPointsMap.put(foPoint.key, foPoint);
 
-        // register to memcached server
-        // lots of timeout issues so we only do the file registeration first
-        // then the controller will register all the info in memcached server
-        /*
-        try {
-            MemcachedClient client = new XMemcachedClient(arguments.memcachedHost(), arguments.memcachedPort());
-            client.set(memcachedKey, 0, value);
-            client.shutdown();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (MemcachedException e) {
-            e.printStackTrace();
-        } catch (TimeoutException e) {
-            System.out.println(String.format("INFO ChaosMachine registerTrycatchInfo time out (%s)", memcachedKey));
+            // register to a csv file
+            File csvFile = new File(arguments.csvfilepath());
+            try {
+                PrintWriter out = null;
+                if (csvFile.exists()) {
+                    out = new PrintWriter(new FileWriter(csvFile, true));
+                    out.println(String.format("%s,%s,%s,%s", foPoint.key, foPoint.className, foPoint.methodName, foPoint.mode));
+                } else {
+                    csvFile.createNewFile();
+                    out = new PrintWriter(new FileWriter(csvFile));
+                    out.println("key,className,methodName,mode");
+                    out.println(String.format("%s,%s,%s,%s", foPoint.key, foPoint.className, foPoint.methodName, foPoint.mode));
+                }
+                out.flush();
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
-        */
     }
 
     public static void registerTrycatchToMemcached(String tcIndexInfo, String defaultMode, String memcachedHost, int memcachedPort) {
@@ -114,7 +101,7 @@ public class ChaosMonkey {
         } catch (MemcachedException e) {
             e.printStackTrace();
         } catch (TimeoutException e) {
-            System.out.println(String.format("INFO ChaosMachine registerTrycatchToMemcached time out (%s)", tcIndexInfo));
+            System.out.println(String.format("INFO FOAgent registerTrycatchToMemcached time out (%s)", tcIndexInfo));
         }
     }
 }
