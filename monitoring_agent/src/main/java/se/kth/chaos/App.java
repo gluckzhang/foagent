@@ -2,24 +2,32 @@ package se.kth.chaos;
 
 public class App {
     public static void main(String[] args) {
-        System.out.println("Hello World!");
+        while (true) {
+            System.out.println("Hello World!");
 
-        String str = null;
-        try {
-            str.toString();
-        } catch (Exception e) {
-            System.out.println("In Java: Got an exception in java code");
-        }
+            String str = null;
+            try {
+                str.toString();
+            } catch (Exception e) {
+                System.out.println("In Java: Got an exception in java code");
+            }
 //        str.toString();
 
-        MayThrowException mte = new MayThrowException();
-        try {
-            mte.throwNPE();
-        } catch (Exception e) {
-            System.out.println("In Java: Got an exception in java code");
-        }
+            MayThrowException mte = new MayThrowException();
+            try {
+                mte.throwNPE();
+            } catch (Exception e) {
+                System.out.println("In Java: Got an exception in java code");
+            }
 
-        mte.throwNPE();
+//            mte.throwNPE();
+
+            try {
+                Thread.currentThread().sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
 
