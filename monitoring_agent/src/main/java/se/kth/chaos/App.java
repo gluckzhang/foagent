@@ -28,4 +28,25 @@ class MayThrowException {
         String str = null;
         str.toString();
     }
+
+    public void singleLineMethod() {
+        String str = null;
+    }
+
+//    public void emptyMethod() {
+//
+//    }
+
+    public int singleInt() {
+        return 0;
+    }
+
+//    public void singleThrowMehod() throws Exception {
+//        try {
+//            throw new Exception();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            throw e;
+//        }
+//    }
 }

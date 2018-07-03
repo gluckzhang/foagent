@@ -1,7 +1,9 @@
 package se.kth.chaos.visitors;
 
+import jdk.internal.org.objectweb.asm.AnnotationVisitor;
 import jdk.internal.org.objectweb.asm.Label;
 import jdk.internal.org.objectweb.asm.MethodVisitor;
+import jdk.internal.org.objectweb.asm.TypePath;
 import se.kth.chaos.AgentArguments;
 import se.kth.chaos.FOAgent;
 import se.kth.chaos.FailureObliviousPoint;
@@ -11,6 +13,8 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
 public class FoMethodVisitor extends MethodVisitor {
     private String className;
     private String methodName;
+    private String methodDesc;
+    private String methodSignature;
     private AgentArguments arguments;
 
     // below label variables are for adding try/catch blocks in instrumented code.
@@ -28,10 +32,13 @@ public class FoMethodVisitor extends MethodVisitor {
      * @param mv: MethodVisitor obj
      * @param methodName : methodName to make sure adding try catch block for the specific method.
      */
-    public FoMethodVisitor(int api, MethodVisitor mv, String methodName, String className, AgentArguments arguments) {
+    public FoMethodVisitor(int api, MethodVisitor mv, String methodName, String methodDesc, String methodSignature,
+                           String className, AgentArguments arguments) {
         super(api, mv);
         this.className = className;
         this.methodName = methodName;
+        this.methodDesc = methodDesc;
+        this.methodSignature = methodSignature;
         this.arguments = arguments;
     }
 
@@ -40,7 +47,8 @@ public class FoMethodVisitor extends MethodVisitor {
     @Override
     public void visitCode() {
         super.visitCode();
-        if (!methodName.startsWith("<") && arguments.filter().matchFullName(className, methodName)) {
+        // TODO now we temporarily focus on void methods, remove methodDesc.endsWith("V") later
+        if (!methodName.startsWith("<") && arguments.filter().matchFullName(className, methodName) && methodDesc.endsWith("V")) {
             lTryBlockStart = new Label();
             lTryBlockEnd = new Label();
             lCatchBlockStart = new Label();
@@ -56,7 +64,8 @@ public class FoMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitInsn(int opcode) {
-        if (!methodName.startsWith("<") && arguments.filter().matchFullName(className, methodName)) {
+        // TODO now we temporarily focus on void methods, remove methodDesc.endsWith("V") later
+        if (!methodName.startsWith("<") && arguments.filter().matchFullName(className, methodName) && methodDesc.endsWith("V")) {
             if ((opcode >= IRETURN && opcode <= RETURN) || opcode == ATHROW) {
                 // closing the try block and opening the catch block
                 // closing the try block
@@ -78,6 +87,11 @@ public class FoMethodVisitor extends MethodVisitor {
                         "failureObliviousOrNot",
                         "(Ljava/lang/String;Ljava/lang/Throwable;)V",
                         false);
+
+                // if the method has a return value, we should add another return in catch block
+                if (!methodDesc.endsWith("V")) {
+
+                }
 
                 // exception handler ends here:
                 visitLabel(lCatchBlockEnd);

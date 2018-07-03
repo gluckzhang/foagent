@@ -56,7 +56,7 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
                 classReader.accept(classVisitor, 0);
 
                 // write into a class file to see whether it is correct
-                // writeIntoClassFile(classNode.name, classWriter.toByteArray());
+                writeIntoClassFile(classNode.name, classWriter.toByteArray());
                 break;
 	        default:
 	            // nothing now
