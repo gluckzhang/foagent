@@ -12,6 +12,12 @@ public class FilterByClassAndMethodName {
         this.pattern = Pattern.compile(regex.replace("$", "\\$"));
     }
 
+    public boolean matches(String className, String methodName) {
+        String fullName = className + "/" + methodName;
+
+        return this.pattern.matcher(fullName).find();
+    }
+
     public boolean matchClassName(String className) {
         return this.regex.startsWith(className) || className.startsWith(this.regex);
     }

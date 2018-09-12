@@ -24,6 +24,17 @@ public class FOAgent {
         }
     }
 
+    public static int foArrayReading(int readingIndex, int arrayLength) {
+        int foIndex = 0;
+        if (readingIndex < 0) {
+            foIndex = 0;
+        } else if (readingIndex >= arrayLength) {
+            foIndex = arrayLength - 1;
+        }
+
+        return foIndex;
+    }
+
     public static void registerFailureObliviousPoint(FailureObliviousPoint foPoint, AgentArguments arguments) {
         if (!foPointsMap.containsKey(foPoint.key)) {
             if (monitoringThread == false) {

@@ -3,7 +3,8 @@ package se.kth.chaos;
 import jdk.internal.org.objectweb.asm.ClassReader;
 import jdk.internal.org.objectweb.asm.ClassVisitor;
 import jdk.internal.org.objectweb.asm.ClassWriter;
-import jdk.internal.org.objectweb.asm.tree.ClassNode;
+import jdk.internal.org.objectweb.asm.Opcodes;
+import jdk.internal.org.objectweb.asm.tree.*;
 import jdk.internal.org.objectweb.asm.util.CheckClassAdapter;
 import se.kth.chaos.visitors.FoClassVisitor;
 
@@ -33,7 +34,7 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
 
         classReader.accept(classNode, 0);
 
-        if (inWhiteList(classNode.name) || !arguments.filter().matchClassName(classNode.name)) return classFileBuffer;
+        if (inWhiteList(classNode.name)) return classFileBuffer;
 
         switch (arguments.operationMode()) {
             case FO:
@@ -49,6 +50,7 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
                         method.accept(classVisitor);
                     });
                 //*/
+                if (!arguments.filter().matchClassName(classNode.name)) break;
 
                 classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
                 FoClassVisitor foClassVisitor = new FoClassVisitor(ASM4, classWriter, arguments);
@@ -56,9 +58,28 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
                 classReader.accept(classVisitor, 0);
 
                 // write into a class file to see whether it is correct
-                writeIntoClassFile(classNode.name, classWriter.toByteArray());
+                // writeIntoClassFile(classNode.name, classWriter.toByteArray());
                 break;
-	        default:
+
+            case FO_ARRAY:
+                classNode.methods.stream()
+                    .filter(method -> !method.name.startsWith("<"))
+                    .filter(method -> arguments.filter().matches(classNode.name, method.name))
+                    .forEach(method -> {
+                        InsnList insnList = method.instructions;
+                        for (AbstractInsnNode node : insnList.toArray()) {
+                            if (node instanceof VarInsnNode && node.getOpcode() == Opcodes.ALOAD) {
+                                System.out.println("INFO FOAgent load an array variable");
+                            } else if (node instanceof InsnNode && node.getOpcode() >= Opcodes.IALOAD && node.getOpcode() <= Opcodes.AALOAD) {
+
+                                System.out.println("INFO FOAgent now we try to add fo feature!");
+                                insnList.insertBefore(node, OperationMode.FO_ARRAY.generateByteCode(method, arguments));
+                            }
+                        }
+                    });
+                break;
+
+            default:
 	            // nothing now
 	            break;
         }
