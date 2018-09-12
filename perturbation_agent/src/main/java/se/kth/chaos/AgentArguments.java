@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 public class AgentArguments {
     private int tcIndex;
     private OperationMode operationMode;
+    private double chanceOfFailure;
     private FilterByClassAndMethodName filter;
     private String configFile;
     private String memcachedHost;
@@ -21,6 +22,7 @@ public class AgentArguments {
         Map<String, String> configuration = argumentMap(args == null ? "" : args);
         this.tcIndex = Integer.valueOf(configuration.getOrDefault("tcindex", "-1"));
         this.operationMode = OperationMode.fromLowerCase(configuration.getOrDefault("mode", OperationMode.ARRAY.name()));
+        this.chanceOfFailure = Double.valueOf(configuration.getOrDefault("rate", "1"));
         this.filter = new FilterByClassAndMethodName(configuration.getOrDefault("filter", ".*"));
         this.configFile = configuration.getOrDefault("config", null);
         this.memcachedHost = configuration.getOrDefault("memcachedHost", "localhost");
@@ -62,6 +64,7 @@ public class AgentArguments {
             p.load(inputStream);
             this.tcIndex = Integer.valueOf(p.getProperty("tcindex", "-1"));
             this.operationMode = OperationMode.fromLowerCase(p.getProperty("mode", OperationMode.ARRAY.name()));
+            this.chanceOfFailure = Double.valueOf(p.getProperty("rate", "1"));
             this.filter = new FilterByClassAndMethodName(p.getProperty("filter", ".*"));
             this.memcachedHost = p.getProperty("memcachedHost", "localhost");
             this.memcachedPort = Integer.valueOf(p.getProperty("memcachedPort", "11211"));
@@ -85,6 +88,13 @@ public class AgentArguments {
             refreshConfig();
         }
         return operationMode;
+    }
+
+    public double chanceOfFailure() {
+        if (this.configFile != null) {
+            refreshConfig();
+        }
+        return chanceOfFailure;
     }
 
     public FilterByClassAndMethodName filter() {

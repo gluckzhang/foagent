@@ -8,6 +8,7 @@ import jdk.internal.org.objectweb.asm.tree.*;
 import java.io.*;
 import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
+import java.util.Random;
 
 public class PerturbationAgentClassTransformer implements ClassFileTransformer {
 
@@ -23,6 +24,7 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
     }
 
     private byte[] meddle(byte[] classFileBuffer) {
+        Random random = new Random();
         ClassReader classReader = new ClassReader(classFileBuffer);
         ClassWriter classWriter = null;
         ClassNode classNode = new ClassNode();
@@ -41,7 +43,7 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
                         for (AbstractInsnNode node : insnList.toArray()) {
                             if (node instanceof VarInsnNode && node.getOpcode() == Opcodes.ALOAD) {
                                 System.out.println("INFO PerturbationAgent load an array variable");
-                            } else if (node instanceof InsnNode && node.getOpcode() == Opcodes.IALOAD) {
+                            } else if (node instanceof InsnNode && node.getOpcode() >= Opcodes.IALOAD && node.getOpcode() <= Opcodes.AALOAD) {
                                 System.out.println("INFO PerturbationAgent read an array");
                                 AbstractInsnNode previousNode = node.getPrevious();
                                 String readingIndex = "UNKNOWN";

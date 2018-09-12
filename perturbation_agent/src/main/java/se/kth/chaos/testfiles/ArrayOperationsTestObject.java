@@ -8,18 +8,32 @@ public class ArrayOperationsTestObject {
         int localInt1 = 6;
         int localInt2 = 6;
         int localInt3 = 6;
-        int localInt4 = 6;
+        int localInt4 = 0;
         int localInt5 = 6;
 
         int tmp = testArray[2] + 100;
 
         System.out.println(testArray[2]);
-        System.out.println(testArray[8]);
+        System.out.println(testArray[7]);
         System.out.println(testArray[1+2+3]);
         System.out.println(testArray[localInt5]);
+        System.out.println(twoDArray[1][1]);
+        System.out.println(twoDArray[1][localInt4 + 1]);
 
         System.out.println(testArray.length);
         boolean compared = localInt5 >= testArray.length;
+
+        System.out.println(twoDArray[1].length);
+        boolean compared2 = localInt4 >= twoDArray[1].length;
+
+        double[] testDoubleArray = {1.0, 2.0, 3.0, 4.0};
+        System.out.println(testDoubleArray[0]);
+
+        float[] testFloatArray = {1.0f, 2.0f, 3.0f, 4.0f};
+        System.out.println(testFloatArray[1]);
+
+        String[] testStringArray = {"a", "b", "c", "d"};
+        System.out.println(testStringArray[2]);
 
         /*
         System.out.println("init an int array: {100, 200, 300, 400, 500}");
