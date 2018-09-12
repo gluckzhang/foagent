@@ -29,8 +29,8 @@
                             <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                         </manifest>
                         <manifestEntries>
-                            <Premain-Class>se.kth.chaos.FailureObliviousAgent</Premain-Class>
-                            <Agent-Class>se.kth.chaos.FailureObliviousAgent</Agent-Class>
+                            <Premain-Class>se.kth.chaos.foagent.FailureObliviousAgent</Premain-Class>
+                            <Agent-Class>se.kth.chaos.foagent.FailureObliviousAgent</Agent-Class>
                             <Can-Redefine-Classes>True</Can-Redefine-Classes>
                             <Can-Retransform-Classes>True</Can-Retransform-Classes>
                             <Can-Set-Native-Method-Prefix>True</Can-Set-Native-Method-Prefix>
@@ -58,8 +58,8 @@
                     <archive>
                         <index>true</index>
                         <manifestEntries>
-                            <Premain-Class>se.kth.chaos.FailureObliviousAgent</Premain-Class>
-                            <Agent-Class>se.kth.chaos.FailureObliviousAgent</Agent-Class>
+                            <Premain-Class>se.kth.chaos.foagent.FailureObliviousAgent</Premain-Class>
+                            <Agent-Class>se.kth.chaos.foagent.FailureObliviousAgent</Agent-Class>
                         </manifestEntries>
                     </archive>
                 </configuration>
