@@ -37,7 +37,7 @@ public enum OperationMode {
 
             list.add(new MethodInsnNode(
                 Opcodes.INVOKESTATIC,
-                "se/kth/chaos/FOAgent",
+                "se/kth/chaos/foagent/FOAgent",
                 "foArrayReading",
                 "(II)I",
                 false // this is not a method on an interface
