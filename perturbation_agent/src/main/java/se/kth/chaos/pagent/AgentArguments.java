@@ -21,7 +21,7 @@ public class AgentArguments {
     public AgentArguments(String args) {
         Map<String, String> configuration = argumentMap(args == null ? "" : args);
         this.tcIndex = Integer.valueOf(configuration.getOrDefault("tcindex", "-1"));
-        this.operationMode = OperationMode.fromLowerCase(configuration.getOrDefault("mode", OperationMode.ARRAY.name()));
+        this.operationMode = OperationMode.fromLowerCase(configuration.getOrDefault("mode", OperationMode.ARRAY_PONE.name()));
         this.chanceOfFailure = Double.valueOf(configuration.getOrDefault("rate", "1"));
         this.filter = new FilterByClassAndMethodName(configuration.getOrDefault("filter", ".*"));
         this.configFile = configuration.getOrDefault("config", null);
@@ -63,7 +63,7 @@ public class AgentArguments {
             InputStream inputStream = new FileInputStream(this.configFile);
             p.load(inputStream);
             this.tcIndex = Integer.valueOf(p.getProperty("tcindex", "-1"));
-            this.operationMode = OperationMode.fromLowerCase(p.getProperty("mode", OperationMode.ARRAY.name()));
+            this.operationMode = OperationMode.fromLowerCase(p.getProperty("mode", OperationMode.ARRAY_PONE.name()));
             this.chanceOfFailure = Double.valueOf(p.getProperty("rate", "1"));
             this.filter = new FilterByClassAndMethodName(p.getProperty("filter", ".*"));
             this.memcachedHost = p.getProperty("memcachedHost", "localhost");

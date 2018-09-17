@@ -4,7 +4,7 @@ import jdk.internal.org.objectweb.asm.Opcodes;
 import jdk.internal.org.objectweb.asm.tree.*;
 
 public enum OperationMode {
-    ARRAY {
+    ARRAY_PONE {
         @Override
         public InsnList generateByteCode(TryCatchBlockNode tryCatchBlock, MethodNode methodNode, ClassNode classNode, int tcIndex, AgentArguments arguments) {
             InsnList list = new InsnList();

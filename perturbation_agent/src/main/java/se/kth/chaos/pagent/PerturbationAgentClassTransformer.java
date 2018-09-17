@@ -34,7 +34,7 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
         if (inWhiteList(classNode.name)) return classFileBuffer;
 
         switch (arguments.operationMode()) {
-            case ARRAY:
+            case ARRAY_PONE:
                 classNode.methods.stream()
                     .filter(method -> !method.name.startsWith("<"))
                     .filter(method -> arguments.filter().matches(classNode.name, method.name))
@@ -60,7 +60,7 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
                                 // System.out.println("INFO PerturbationAgent the array index is:" + readingIndex);
 
                                 System.out.println("INFO PerturbationAgent now we try to perturb with PONE operation!");
-                                insnList.insertBefore(node, OperationMode.ARRAY.generateByteCode(method, arguments));
+                                insnList.insertBefore(node, OperationMode.ARRAY_PONE.generateByteCode(method, arguments));
                             }
                         }
                     });
