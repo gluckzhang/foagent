@@ -18,7 +18,7 @@ public class ArrayOperationsTestObject {
 
         testArray[0] = 1;
         testArray[index] = 1;
-
+/*
         double[] testDoubleArray = {1.0, 2.0, 3.0, 4.0};
         System.out.println("testDoubleArray index 8: " + testDoubleArray[8]);
         testDoubleArray[0] = 0.9;
@@ -31,5 +31,6 @@ public class ArrayOperationsTestObject {
         String[] testStringArray = {"a", "b", "c", "d"};
         System.out.println("testStringArray index -99: " + testStringArray[-99]);
         testStringArray[index] = "fff";
+*/
     }
 }

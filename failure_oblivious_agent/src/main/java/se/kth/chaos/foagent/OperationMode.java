@@ -20,6 +20,22 @@ public enum OperationMode {
     },
 
     FO_ARRAY {
+        // separately use the following two options
+        @Override
+        public InsnList generateByteCode(TryCatchBlockNode tryCatchBlock, MethodNode methodNode, ClassNode classNode, int tcIndex, AgentArguments arguments) {
+            InsnList list = new InsnList();
+
+            return list;
+        }
+
+        @Override
+        public InsnList generateByteCode(MethodNode method, AgentArguments arguments) {
+            // won't use this method
+            return null;
+        }
+    },
+
+    FO_ARRAY_READING {
         @Override
         public InsnList generateByteCode(TryCatchBlockNode tryCatchBlock, MethodNode methodNode, ClassNode classNode, int tcIndex, AgentArguments arguments) {
             InsnList list = new InsnList();
@@ -41,6 +57,30 @@ public enum OperationMode {
                 "foArrayReading",
                 "(II)I",
                 false // this is not a method on an interface
+            ));
+
+            return list;
+        }
+    },
+
+    FO_ARRAY_WRITING {
+        @Override
+        public InsnList generateByteCode(TryCatchBlockNode tryCatchBlock, MethodNode methodNode, ClassNode classNode, int tcIndex, AgentArguments arguments) {
+            InsnList list = new InsnList();
+
+            return list;
+        }
+
+        @Override
+        public InsnList generateByteCode(MethodNode method, AgentArguments arguments) {
+            InsnList list = new InsnList();
+
+            list.add(new MethodInsnNode(
+                    Opcodes.INVOKESTATIC,
+                    "se/kth/chaos/foagent/FOAgent",
+                    "foArrayWriting",
+                    "(Ljava/lang/Object;ILjava/lang/Object;)V",
+                    false // this is not a method on an interface
             ));
 
             return list;

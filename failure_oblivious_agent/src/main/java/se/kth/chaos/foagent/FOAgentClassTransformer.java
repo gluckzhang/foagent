@@ -6,6 +6,7 @@ import jdk.internal.org.objectweb.asm.ClassWriter;
 import jdk.internal.org.objectweb.asm.Opcodes;
 import jdk.internal.org.objectweb.asm.tree.*;
 import jdk.internal.org.objectweb.asm.util.CheckClassAdapter;
+import se.kth.chaos.foagent.visitors.FoClassVisitor;
 
 import java.io.*;
 import java.lang.instrument.ClassFileTransformer;
@@ -66,13 +67,22 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
                     .filter(method -> arguments.filter().matches(classNode.name, method.name))
                     .forEach(method -> {
                         InsnList insnList = method.instructions;
+                        InsnList insnToBeDeleted = new InsnList();
                         for (AbstractInsnNode node : insnList.toArray()) {
-                            if (node instanceof VarInsnNode && node.getOpcode() == Opcodes.ALOAD) {
+                            if (node.getOpcode() == Opcodes.ALOAD) {
                                 // an local variable array loading operation
                                 // System.out.println("INFO FOAgent load an array variable");
-                            } else if (node instanceof InsnNode && node.getOpcode() >= Opcodes.IALOAD && node.getOpcode() <= Opcodes.AALOAD) {
-                                // System.out.println("INFO FOAgent now we try to add fo feature!");
-                                insnList.insertBefore(node, OperationMode.FO_ARRAY.generateByteCode(method, arguments));
+                            } else if (node.getOpcode() >= Opcodes.IALOAD && node.getOpcode() <= Opcodes.AALOAD) {
+                                // System.out.println("INFO FOAgent now we try to add fo array reading feature!");
+                                insnList.insertBefore(node, OperationMode.FO_ARRAY_READING.generateByteCode(method, arguments));
+                            } else if (node.getOpcode() >= Opcodes.LASTORE && node.getOpcode() <= Opcodes.SASTORE) {
+                                System.out.println("INFO FOAgent now we try to add fo array writing feature!");
+                                // array writing operation
+                                insnList.insertBefore(node, OperationMode.FO_ARRAY_WRITING.generateByteCode(method, arguments));
+
+                                // regarding the writing operations, we have already handled them in foArrayWriting method
+                                // so we should remove the original array store operations
+                                method.instructions.remove(node);
                             }
                         }
                     });

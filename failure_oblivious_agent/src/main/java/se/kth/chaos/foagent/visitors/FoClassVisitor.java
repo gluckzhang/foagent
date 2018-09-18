@@ -1,8 +1,9 @@
-package se.kth.chaos.foagent;
+package se.kth.chaos.foagent.visitors;
 
 import jdk.internal.org.objectweb.asm.ClassVisitor;
 import jdk.internal.org.objectweb.asm.ClassWriter;
 import jdk.internal.org.objectweb.asm.MethodVisitor;
+import se.kth.chaos.foagent.AgentArguments;
 
 public class FoClassVisitor extends ClassVisitor {
     private int api;

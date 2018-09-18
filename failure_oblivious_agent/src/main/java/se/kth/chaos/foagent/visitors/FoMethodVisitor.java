@@ -1,7 +1,10 @@
-package se.kth.chaos.foagent;
+package se.kth.chaos.foagent.visitors;
 
 import jdk.internal.org.objectweb.asm.Label;
 import jdk.internal.org.objectweb.asm.MethodVisitor;
+import se.kth.chaos.foagent.AgentArguments;
+import se.kth.chaos.foagent.FOAgent;
+import se.kth.chaos.foagent.FailureObliviousPoint;
 
 import static jdk.internal.org.objectweb.asm.Opcodes.*;
 
