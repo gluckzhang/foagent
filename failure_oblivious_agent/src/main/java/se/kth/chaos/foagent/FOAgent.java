@@ -38,6 +38,14 @@ public class FOAgent {
     }
 
     public static void foArrayWriting(Object target, int index, Object value) {
+        if (index < 0 || index > java.lang.reflect.Array.getLength(target) - 1) {
+            System.out.println("INFO FOAgent array writing invalid index, ignore this writing operation");
+        } else {
+            java.lang.reflect.Array.set(target, index, value);
+        }
+    }
+
+    public static void foArrayWriting(Object target, int index, int value) {
         System.out.println("in method");
         if (index < 0 || index > java.lang.reflect.Array.getLength(target) - 1) {
             System.out.println("INFO FOAgent array writing invalid index, ignore this writing operation");

@@ -68,14 +68,27 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
                     .forEach(method -> {
                         InsnList insnList = method.instructions;
                         InsnList insnToBeDeleted = new InsnList();
+                        boolean newArrayFlag = false;
                         for (AbstractInsnNode node : insnList.toArray()) {
+                            if (node.getOpcode() == Opcodes.NEWARRAY || node.getOpcode() == Opcodes.ANEWARRAY) {
+                                newArrayFlag = true;
+                                continue;
+                            } else if (node.getOpcode() == Opcodes.ASTORE) {
+                                newArrayFlag = false;
+                                continue;
+                            } else if (newArrayFlag) {
+                                continue;
+                            }
+
                             if (node.getOpcode() == Opcodes.ALOAD) {
                                 // an local variable array loading operation
                                 // System.out.println("INFO FOAgent load an array variable");
                             } else if (node.getOpcode() >= Opcodes.IALOAD && node.getOpcode() <= Opcodes.AALOAD) {
                                 // System.out.println("INFO FOAgent now we try to add fo array reading feature!");
                                 insnList.insertBefore(node, OperationMode.FO_ARRAY_READING.generateByteCode(method, arguments));
-                            } else if (node.getOpcode() >= Opcodes.LASTORE && node.getOpcode() <= Opcodes.SASTORE) {
+                                // } else if (node.getOpcode() >= Opcodes.IASTORE && node.getOpcode() <= Opcodes.SASTORE) {
+                            } else if (node.getOpcode() == Opcodes.AASTORE) {
+                                // temporarily we only handle reference array writing operation
                                 System.out.println("INFO FOAgent now we try to add fo array writing feature!");
                                 // array writing operation
                                 insnList.insertBefore(node, OperationMode.FO_ARRAY_WRITING.generateByteCode(method, arguments));

@@ -17,7 +17,7 @@ public class ArrayOperationsTestObject {
         System.out.println("twoDArray index as a var: " + twoDArray[index][index]);
 
         testArray[0] = 1;
-        testArray[index] = 1;
+        // testArray[index] = 1;
 /*
         double[] testDoubleArray = {1.0, 2.0, 3.0, 4.0};
         System.out.println("testDoubleArray index 8: " + testDoubleArray[8]);
@@ -27,10 +27,10 @@ public class ArrayOperationsTestObject {
         float[] testFloatArray = {1.0f, 2.0f, 3.0f, 4.0f};
         System.out.println("testFloatArray index (length + 1): " + testFloatArray[testFloatArray.length + 1]);
         testFloatArray[0] = 0.9f;
-
+*/
         String[] testStringArray = {"a", "b", "c", "d"};
         System.out.println("testStringArray index -99: " + testStringArray[-99]);
         testStringArray[index] = "fff";
-*/
+
     }
 }
