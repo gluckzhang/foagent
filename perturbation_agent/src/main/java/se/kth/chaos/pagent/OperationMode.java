@@ -21,6 +21,22 @@ public enum OperationMode {
 
             return list;
         }
+    },
+
+    DATAGRAM_SOCKET_TIMEOUT {
+        @Override
+        public InsnList generateByteCode(TryCatchBlockNode tryCatchBlock, MethodNode methodNode, ClassNode classNode, int tcIndex, AgentArguments arguments) {
+            InsnList list = new InsnList();
+
+            return list;
+        }
+
+        @Override
+        public InsnList generateByteCode(MethodNode method, AgentArguments arguments) {
+            InsnList list = new InsnList();
+
+            return list;
+        }
     };
 
     public static OperationMode fromLowerCase(String mode) {

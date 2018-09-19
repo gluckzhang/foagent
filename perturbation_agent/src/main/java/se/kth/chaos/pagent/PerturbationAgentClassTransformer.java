@@ -65,6 +65,19 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
                         }
                     });
                 break;
+            case DATAGRAM_SOCKET_TIMEOUT:
+                classNode.methods.stream()
+                        .filter(method -> !method.name.startsWith("<"))
+                        .filter(method -> arguments.filter().matches(classNode.name, method.name))
+                        .forEach(method -> {
+                            InsnList insnList = method.instructions;
+                            for (AbstractInsnNode node : insnList.toArray()) {
+                                if (node.getOpcode() == Opcodes.INVOKEVIRTUAL) {
+                                    
+                                }
+                            }
+                        });
+                break;
 	        default:
 	            // nothing now
 	            break;
@@ -77,7 +90,7 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
     }
 
     private boolean inWhiteList(String className) {
-        String[] whiteList = {"java/", "sun/", "se/kth/chaos/pagent", "se/kth/chaos/foagent"};
+        String[] whiteList = {"sun/", "se/kth/chaos/pagent", "se/kth/chaos/foagent"};
         boolean result = false;
 
         for (String prefix : whiteList) {
