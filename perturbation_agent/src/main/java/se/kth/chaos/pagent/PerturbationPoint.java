@@ -3,13 +3,13 @@ package se.kth.chaos.pagent;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class FailureObliviousPoint {
+public class PerturbationPoint {
     public String key;
     public String className;
     public String methodName;
     public String mode;
 
-    public FailureObliviousPoint(String className, String methodName, String defaultMode) {
+    public PerturbationPoint(String className, String methodName, String defaultMode) {
         this.className = className;
         this.methodName = methodName;
         this.mode = defaultMode;

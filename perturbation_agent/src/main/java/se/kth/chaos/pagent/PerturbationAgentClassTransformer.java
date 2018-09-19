@@ -34,6 +34,34 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
         if (inWhiteList(classNode.name)) return classFileBuffer;
 
         switch (arguments.operationMode()) {
+            case ARRAY_ANALYSIS:
+                classNode.methods.stream()
+                        .filter(method -> !method.name.startsWith("<"))
+                        .filter(method -> arguments.filter().matches(classNode.name, method.name))
+                        .forEach(method -> {
+                            InsnList insnList = method.instructions;
+                            for (AbstractInsnNode node : insnList.toArray()) {
+                                if (node.getOpcode() >= Opcodes.IALOAD && node.getOpcode() <= Opcodes.AALOAD) {
+                                    // an array reading operation
+                                    System.err.println(String.format("INFO PerturbationAgent array reading at: %s/%s", classNode.name, method.name));
+                                    AbstractInsnNode previousNode = node.getPrevious();
+                                    String readingIndex = "UNKNOWN";
+                                    if (previousNode.getOpcode() >= Opcodes.ICONST_M1 && previousNode.getOpcode() <= Opcodes.ICONST_5) {
+                                        readingIndex = previousNode.getOpcode() - 3 + "";
+                                    } else if (previousNode.getOpcode() == Opcodes.BIPUSH) {
+                                        readingIndex = ((IntInsnNode) previousNode).operand + "";
+                                    } else if (previousNode.getOpcode() == Opcodes.ILOAD) {
+                                        readingIndex = "a local variable";
+                                    }
+
+                                    System.err.println("INFO PerturbationAgent the array index is:" + readingIndex);
+
+                                    PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, arguments.defaultMode());
+                                    PAgent.registerPerturbationPoint(perturbationPoint, arguments);
+                                }
+                            }
+                        });
+                break;
             case ARRAY_PONE:
                 classNode.methods.stream()
                     .filter(method -> !method.name.startsWith("<"))

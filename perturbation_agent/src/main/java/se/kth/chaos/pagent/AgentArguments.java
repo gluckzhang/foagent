@@ -27,8 +27,8 @@ public class AgentArguments {
         this.configFile = configuration.getOrDefault("config", null);
         this.memcachedHost = configuration.getOrDefault("memcachedHost", "localhost");
         this.memcachedPort = Integer.valueOf(configuration.getOrDefault("memcachedPort", "11211"));
-        this.csvfilepath = configuration.getOrDefault("csvfilepath", "failureObliviousPointsList.csv");
-        this.defaultMode = configuration.getOrDefault("defaultMode", "array");
+        this.csvfilepath = configuration.getOrDefault("csvfilepath", "perturbationPointsList.csv");
+        this.defaultMode = configuration.getOrDefault("defaultMode", "array_analysis");
 
         if (this.configFile != null) {
             refreshConfig();
@@ -68,8 +68,8 @@ public class AgentArguments {
             this.filter = new FilterByClassAndMethodName(p.getProperty("filter", ".*"));
             this.memcachedHost = p.getProperty("memcachedHost", "localhost");
             this.memcachedPort = Integer.valueOf(p.getProperty("memcachedPort", "11211"));
-            this.csvfilepath = p.getProperty("csvfilepath", "failureObliviousPointsList.csv");
-            this.defaultMode = p.getProperty("defaultMode", "fo");
+            this.csvfilepath = p.getProperty("csvfilepath", "perturbationPointsList.csv");
+            this.defaultMode = p.getProperty("defaultMode", "array_analysis");
             inputStream.close();
         } catch (Exception e) {
             e.printStackTrace();

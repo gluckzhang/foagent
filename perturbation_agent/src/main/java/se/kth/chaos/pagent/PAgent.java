@@ -10,28 +10,28 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class PAgent {
-    public static Map<String, FailureObliviousPoint> foPointsMap = new HashMap<String, FailureObliviousPoint>();
+    public static Map<String, PerturbationPoint> perturbationPointsMap = new HashMap<String, PerturbationPoint>();
     public static boolean monitoringThread = false;
 
-    public static void failureObliviousOrNot(String foPointKey, Throwable oriException) throws Throwable {
-        FailureObliviousPoint foPoint = foPointsMap.getOrDefault(foPointKey, null);
+    public static void perturbationOrNot(String perturbationPointKey, Throwable oriException) throws Throwable {
+        PerturbationPoint foPoint = perturbationPointsMap.getOrDefault(perturbationPointKey, null);
         if (foPoint != null && foPoint.mode.equals("fo")) {
-            // failure oblivious mode is on, so swallow this exception
-            System.out.println("INFO FOAgent failure oblivious mode is on, ignore the following exception");
-            System.out.println(String.format("INFO FOAgent %s @ %s/%s", oriException.getClass().toString(), foPoint.className, foPoint.methodName));
+            // perturbation mode is on, so ...
+            System.out.println("INFO PAgent perturbation mode is on, ...");
+            System.out.println(String.format("INFO PAgent %s @ %s/%s", oriException.getClass().toString(), foPoint.className, foPoint.methodName));
         } else {
             throw oriException;
         }
     }
 
-    public static void registerFailureObliviousPoint(FailureObliviousPoint foPoint, AgentArguments arguments) {
-        if (!foPointsMap.containsKey(foPoint.key)) {
+    public static void registerPerturbationPoint(PerturbationPoint perturbationPoint, AgentArguments arguments) {
+        if (!perturbationPointsMap.containsKey(perturbationPoint.key)) {
             if (monitoringThread == false) {
                 monitoringCsvFile(arguments.csvfilepath());
                 monitoringThread = true;
             }
-            // since monitoring thread is on, adding foPoints might be executed twice
-            foPointsMap.put(foPoint.key, foPoint);
+            // since monitoring thread is on, adding perturbationPoints might be executed twice
+            perturbationPointsMap.put(perturbationPoint.key, perturbationPoint);
 
             // register to a csv file
             File csvFile = new File(arguments.csvfilepath());
@@ -39,12 +39,12 @@ public class PAgent {
                 PrintWriter out = null;
                 if (csvFile.exists()) {
                     out = new PrintWriter(new FileWriter(csvFile, true));
-                    out.println(String.format("%s,%s,%s,%s", foPoint.key, foPoint.className, foPoint.methodName, foPoint.mode));
+                    out.println(String.format("%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.mode));
                 } else {
                     csvFile.createNewFile();
                     out = new PrintWriter(new FileWriter(csvFile));
                     out.println("key,className,methodName,mode");
-                    out.println(String.format("%s,%s,%s,%s", foPoint.key, foPoint.className, foPoint.methodName, foPoint.mode));
+                    out.println(String.format("%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.mode));
                 }
                 out.flush();
                 out.close();
@@ -64,7 +64,7 @@ public class PAgent {
                     if (file.exists() && file.lastModified() > lastModified) {
                         updateModesByFile(filepath);
                         lastModified = file.lastModified();
-                        System.out.println("INFO FOAgent csv file was updated, update the foPointsMap now");
+                        System.out.println("INFO PAgent csv file was updated, update the perturbationPointsMap now");
                     }
 
                     try {
@@ -94,11 +94,15 @@ public class PAgent {
         Map<String, String> kv = new HashMap<String, String>();
         for (int i = 1; i < foPoints.size(); i++) {
             String[] line = foPoints.get(i);
-            FailureObliviousPoint foPoint = foPointsMap.get(line[0]);
+            PerturbationPoint foPoint = perturbationPointsMap.get(line[0]);
             if (foPoint != null) {
                 foPoint.mode = line[3];
-                foPointsMap.put(line[0], foPoint);
+                perturbationPointsMap.put(line[0], foPoint);
             }
         }
+    }
+
+    public static void printLog(String log) {
+        System.err.println(log);
     }
 }
