@@ -6,14 +6,7 @@ import jdk.internal.org.objectweb.asm.tree.*;
 public enum OperationMode {
     ARRAY_ANALYSIS {
         @Override
-        public InsnList generateByteCode(TryCatchBlockNode tryCatchBlock, MethodNode methodNode, ClassNode classNode, int tcIndex, AgentArguments arguments) {
-            InsnList list = new InsnList();
-
-            return list;
-        }
-
-        @Override
-        public InsnList generateByteCode(MethodNode method, AgentArguments arguments) {
+        public InsnList generateByteCode(ClassNode classNode, MethodNode method, AgentArguments arguments, PerturbationPoint perturbationPoint) {
             InsnList list = new InsnList();
 
             return list;
@@ -21,25 +14,15 @@ public enum OperationMode {
     },
     ARRAY_PONE {
         @Override
-        public InsnList generateByteCode(TryCatchBlockNode tryCatchBlock, MethodNode methodNode, ClassNode classNode, int tcIndex, AgentArguments arguments) {
+        public InsnList generateByteCode(ClassNode classNode, MethodNode method, AgentArguments arguments, PerturbationPoint perturbationPoint) {
             InsnList list = new InsnList();
 
-            return list;
-        }
-
-        @Override
-        public InsnList generateByteCode(MethodNode method, AgentArguments arguments) {
-            InsnList list = new InsnList();
-
-            list.add(new InsnNode(Opcodes.ICONST_1));
-            list.add(new InsnNode(Opcodes.IADD));
-
-            list.add(new LdcInsnNode("INFO PAgent add an array_pone perturbator into " + method.name));
+            list.add(new LdcInsnNode(perturbationPoint.key));
             list.add(new MethodInsnNode(
                     Opcodes.INVOKESTATIC,
                     "se/kth/chaos/pagent/PAgent",
-                    "printLog",
-                    "(Ljava/lang/String;)V",
+                    "pOneArrayReading",
+                    "(ILjava/lang/String;)I",
                     false // this is not a method on an interface
             ));
 
@@ -49,14 +32,7 @@ public enum OperationMode {
 
     DATAGRAM_SOCKET_TIMEOUT {
         @Override
-        public InsnList generateByteCode(TryCatchBlockNode tryCatchBlock, MethodNode methodNode, ClassNode classNode, int tcIndex, AgentArguments arguments) {
-            InsnList list = new InsnList();
-
-            return list;
-        }
-
-        @Override
-        public InsnList generateByteCode(MethodNode method, AgentArguments arguments) {
+        public InsnList generateByteCode(ClassNode classNode, MethodNode method, AgentArguments arguments, PerturbationPoint perturbationPoint) {
             InsnList list = new InsnList();
 
             return list;
@@ -67,6 +43,5 @@ public enum OperationMode {
         return OperationMode.valueOf(mode.toUpperCase());
     }
 
-    public abstract InsnList generateByteCode(MethodNode method, AgentArguments arguments);
-    public abstract InsnList generateByteCode(TryCatchBlockNode tryCatchBlock, MethodNode methodNode, ClassNode classNode, int tcIndex, AgentArguments arguments);
+    public abstract InsnList generateByteCode(ClassNode classNode, MethodNode method, AgentArguments arguments, PerturbationPoint perturbationPoint);
 }

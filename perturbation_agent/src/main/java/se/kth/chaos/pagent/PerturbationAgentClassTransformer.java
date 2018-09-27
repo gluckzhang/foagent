@@ -39,6 +39,7 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
                         .filter(method -> !method.name.startsWith("<"))
                         .filter(method -> arguments.filter().matches(classNode.name, method.name))
                         .forEach(method -> {
+                            int indexNumber = 0;
                             InsnList insnList = method.instructions;
                             for (AbstractInsnNode node : insnList.toArray()) {
                                 if (node.getOpcode() >= Opcodes.IALOAD && node.getOpcode() <= Opcodes.AALOAD) {
@@ -56,8 +57,10 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
 
                                     System.err.println("INFO PerturbationAgent the array index is:" + readingIndex);
 
-                                    PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, arguments.defaultMode());
+                                    PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, indexNumber,
+                                            arguments.defaultMode(), 0, arguments.chanceOfFailure());
                                     PAgent.registerPerturbationPoint(perturbationPoint, arguments);
+                                    indexNumber = indexNumber + 1;
                                 }
                             }
                         });
@@ -67,6 +70,7 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
                     .filter(method -> !method.name.startsWith("<"))
                     .filter(method -> arguments.filter().matches(classNode.name, method.name))
                     .forEach(method -> {
+                        int indexNumber = 0;
                         InsnList insnList = method.instructions;
                         for (AbstractInsnNode node : insnList.toArray()) {
                             if (node instanceof VarInsnNode && node.getOpcode() == Opcodes.ALOAD) {
@@ -86,9 +90,11 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
                                 }
 
                                 // System.out.println("INFO PerturbationAgent the array index is:" + readingIndex);
-
-                                System.out.println("INFO PerturbationAgent now we try to perturb with PONE operation!");
-                                insnList.insertBefore(node, OperationMode.ARRAY_PONE.generateByteCode(method, arguments));
+                                PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, indexNumber,
+                                        arguments.defaultMode(), arguments.countdown(), arguments.chanceOfFailure());
+                                PAgent.registerPerturbationPoint(perturbationPoint, arguments);
+                                insnList.insertBefore(node, OperationMode.ARRAY_PONE.generateByteCode(classNode, method, arguments, perturbationPoint));
+                                indexNumber = indexNumber + 1;
                             }
                         }
                     });

@@ -6,6 +6,7 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -13,15 +14,38 @@ public class PAgent {
     public static Map<String, PerturbationPoint> perturbationPointsMap = new HashMap<String, PerturbationPoint>();
     public static boolean monitoringThread = false;
 
+    public static int pOneArrayReading(int readingIndex, String perturbationPointKey) {
+        PerturbationPoint perturbationPoint = perturbationPointsMap.getOrDefault(perturbationPointKey, null);
+        int result = readingIndex;
+
+        if (perturbationPoint != null && perturbationPoint.mode.equals("array_pone") && perturbationPoint.perturbationCountdown > 0) {
+            if (shouldActivate(perturbationPoint.chanceOfFailure)) {
+                System.out.println("INFO PAgent array_pone perturbation activated in "
+                        + perturbationPoint.className + "/" + perturbationPoint.methodName
+                        + ", countDown: " + perturbationPoint.perturbationCountdown);
+
+                perturbationPoint.perturbationCountdown = perturbationPoint.perturbationCountdown - 1;
+                result = result + 1;
+            }
+        }
+
+        return result;
+    }
+
     public static void perturbationOrNot(String perturbationPointKey, Throwable oriException) throws Throwable {
-        PerturbationPoint foPoint = perturbationPointsMap.getOrDefault(perturbationPointKey, null);
-        if (foPoint != null && foPoint.mode.equals("fo")) {
+        PerturbationPoint perturbationPoint = perturbationPointsMap.getOrDefault(perturbationPointKey, null);
+        if (perturbationPoint != null && perturbationPoint.mode.equals("fo")) {
             // perturbation mode is on, so ...
             System.out.println("INFO PAgent perturbation mode is on, ...");
-            System.out.println(String.format("INFO PAgent %s @ %s/%s", oriException.getClass().toString(), foPoint.className, foPoint.methodName));
+            System.out.println(String.format("INFO PAgent %s @ %s/%s", oriException.getClass().toString(), perturbationPoint.className, perturbationPoint.methodName));
         } else {
             throw oriException;
         }
+    }
+
+    public static boolean shouldActivate(double chanceOfFailure) {
+        Random random = new Random();
+        return random.nextDouble() < chanceOfFailure;
     }
 
     public static void registerPerturbationPoint(PerturbationPoint perturbationPoint, AgentArguments arguments) {
@@ -39,12 +63,14 @@ public class PAgent {
                 PrintWriter out = null;
                 if (csvFile.exists()) {
                     out = new PrintWriter(new FileWriter(csvFile, true));
-                    out.println(String.format("%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.mode));
+                    out.println(String.format("%s,%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className,
+                            perturbationPoint.methodName, perturbationPoint.indexNumber, perturbationPoint.mode));
                 } else {
                     csvFile.createNewFile();
                     out = new PrintWriter(new FileWriter(csvFile));
-                    out.println("key,className,methodName,mode");
-                    out.println(String.format("%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.mode));
+                    out.println("key,className,methodName,indexNumber,mode");
+                    out.println(String.format("%s,%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className,
+                            perturbationPoint.methodName, perturbationPoint.indexNumber, perturbationPoint.mode));
                 }
                 out.flush();
                 out.close();

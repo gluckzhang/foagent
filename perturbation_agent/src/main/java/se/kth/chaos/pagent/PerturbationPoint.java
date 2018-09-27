@@ -7,17 +7,24 @@ public class PerturbationPoint {
     public String key;
     public String className;
     public String methodName;
+    public int indexNumber;
     public String mode;
+    public int perturbationCountdown;
+    public double chanceOfFailure;
 
-    public PerturbationPoint(String className, String methodName, String defaultMode) {
+    public PerturbationPoint(String className, String methodName, int indexNumber,
+                             String defaultMode, int perturbationCountdown, double chanceOfFailure) {
         this.className = className;
         this.methodName = methodName;
+        this.indexNumber = indexNumber;
         this.mode = defaultMode;
+        this.perturbationCountdown = perturbationCountdown;
+        this.chanceOfFailure = chanceOfFailure;
 
         MessageDigest mDigest = null;
         try {
             mDigest = MessageDigest.getInstance("MD5");
-            this.key = byteArrayToHex(mDigest.digest((className + methodName).getBytes()));
+            this.key = byteArrayToHex(mDigest.digest((className + methodName + indexNumber).getBytes()));
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }

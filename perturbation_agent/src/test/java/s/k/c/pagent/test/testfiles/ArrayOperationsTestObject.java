@@ -7,6 +7,8 @@ public class ArrayOperationsTestObject {
         int localInt0 = 6;
 
         System.out.println(testArray[2]);
+
+        /*
         System.out.println(testArray[8]);
         System.out.println(testArray[1+2+3]);
         System.out.println(testArray[localInt0]);
