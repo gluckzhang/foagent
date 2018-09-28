@@ -30,11 +30,12 @@ public enum OperationMode {
         }
     },
 
-    DATAGRAM_SOCKET_TIMEOUT {
+    TIMEOUT {
         @Override
         public InsnList generateByteCode(ClassNode classNode, MethodNode method, AgentArguments arguments, PerturbationPoint perturbationPoint) {
             InsnList list = new InsnList();
-
+            System.out.printf("PAgent INFO in %s/%s, timeout exception try-catch founded, type: %s\n", perturbationPoint.className,
+                    perturbationPoint.methodName, perturbationPoint.exceptionType);
             return list;
         }
     };

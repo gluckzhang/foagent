@@ -7,6 +7,7 @@ public class PerturbationPoint {
     public String key;
     public String className;
     public String methodName;
+    public String exceptionType;
     public int indexNumber;
     public String mode;
     public int perturbationCountdown;
@@ -28,6 +29,12 @@ public class PerturbationPoint {
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
+    }
+
+    public PerturbationPoint(String className, String methodName, int indexNumber, String exceptionType,
+                             String defaultMode, int perturbationCountdown, double chanceOfFailure) {
+        this(className, methodName, indexNumber, defaultMode, perturbationCountdown, chanceOfFailure);
+        this.exceptionType = exceptionType;
     }
 
     private static String byteArrayToHex(byte[] byteArray) {

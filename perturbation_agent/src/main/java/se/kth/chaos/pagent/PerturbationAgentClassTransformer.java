@@ -99,22 +99,28 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
                         }
                     });
                 break;
-            case DATAGRAM_SOCKET_TIMEOUT:
+            case TIMEOUT:
                 classNode.methods.stream()
                         .filter(method -> !method.name.startsWith("<"))
                         .filter(method -> arguments.filter().matches(classNode.name, method.name))
+                        .filter(method -> method.tryCatchBlocks.size() > 0)
                         .forEach(method -> {
-                            InsnList insnList = method.instructions;
-                            for (AbstractInsnNode node : insnList.toArray()) {
-                                if (node.getOpcode() == Opcodes.INVOKEVIRTUAL) {
-                                    
+                            int index = 0;
+                            for (TryCatchBlockNode tc : method.tryCatchBlocks) {
+                                if (tc.type.equals("null")) continue; // "synchronized" keyword or try-finally block might make the type empty
+                                if (inTimeoutExceptionList(tc.type)) {
+                                    PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, index, tc.type,
+                                            arguments.defaultMode(), arguments.countdown(), arguments.chanceOfFailure());
+                                    PAgent.registerPerturbationPoint(perturbationPoint, arguments);
+                                    method.instructions.insert(tc.start, arguments.operationMode().generateByteCode(classNode, method, arguments, perturbationPoint));
+                                    index ++;
                                 }
                             }
                         });
                 break;
-	        default:
-	            // nothing now
-	            break;
+            default:
+                // nothing now
+                break;
         }
 
         classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
@@ -125,6 +131,20 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
 
     private boolean inWhiteList(String className) {
         String[] whiteList = {"sun/", "se/kth/chaos/pagent", "se/kth/chaos/foagent"};
+        boolean result = false;
+
+        for (String prefix : whiteList) {
+            if (className.startsWith(prefix)) {
+                result = true;
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    private boolean inTimeoutExceptionList(String className) {
+        String[] whiteList = {"java/util/concurrent/TimeoutException", "java/net/SocketTimeout"};
         boolean result = false;
 
         for (String prefix : whiteList) {

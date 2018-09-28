@@ -29,7 +29,7 @@ public class AgentArguments {
         this.memcachedHost = configuration.getOrDefault("memcachedHost", "localhost");
         this.memcachedPort = Integer.valueOf(configuration.getOrDefault("memcachedPort", "11211"));
         this.csvfilepath = configuration.getOrDefault("csvfilepath", "perturbationPointsList.csv");
-        this.defaultMode = configuration.getOrDefault("defaultMode", "array_analysis");
+        this.defaultMode = configuration.getOrDefault("defaultMode", "off");
         this.perturbationCountdown = Integer.valueOf(configuration.getOrDefault("countdown", "1"));
 
         if (this.configFile != null) {
@@ -71,7 +71,7 @@ public class AgentArguments {
             this.memcachedHost = p.getProperty("memcachedHost", "localhost");
             this.memcachedPort = Integer.valueOf(p.getProperty("memcachedPort", "11211"));
             this.csvfilepath = p.getProperty("csvfilepath", "perturbationPointsList.csv");
-            this.defaultMode = p.getProperty("defaultMode", "array_analysis");
+            this.defaultMode = p.getProperty("defaultMode", "off");
             this.perturbationCountdown = Integer.valueOf(p.getProperty("countdown", "1"));
             inputStream.close();
         } catch (Exception e) {

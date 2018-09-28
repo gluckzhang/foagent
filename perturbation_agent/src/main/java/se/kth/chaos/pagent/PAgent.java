@@ -32,6 +32,18 @@ public class PAgent {
         return result;
     }
 
+    public static void timeoutPerturbation(String perturbationPointKey) {
+        PerturbationPoint perturbationPoint = perturbationPointsMap.getOrDefault(perturbationPointKey, null);
+        if (perturbationPoint != null && perturbationPoint.mode.equals("timeout") && perturbationPoint.perturbationCountdown > 0) {
+            if (shouldActivate(perturbationPoint.chanceOfFailure)) {
+                System.out.printf("INFO PAgent timeout perturbation activated in %/%(%), countDown: %d\n",
+                        perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.exceptionType, perturbationPoint.perturbationCountdown);
+
+                perturbationPoint.perturbationCountdown = perturbationPoint.perturbationCountdown - 1;
+            }
+        }
+    }
+
     public static void perturbationOrNot(String perturbationPointKey, Throwable oriException) throws Throwable {
         PerturbationPoint perturbationPoint = perturbationPointsMap.getOrDefault(perturbationPointKey, null);
         if (perturbationPoint != null && perturbationPoint.mode.equals("fo")) {
@@ -46,6 +58,39 @@ public class PAgent {
     public static boolean shouldActivate(double chanceOfFailure) {
         Random random = new Random();
         return random.nextDouble() < chanceOfFailure;
+    }
+
+    public static void throwException(PerturbationPoint perturbationPoint) throws Throwable {
+        throw throwOrDefault(perturbationPoint);
+    }
+
+    public static Throwable throwOrDefault(PerturbationPoint perturbationPoint) {
+        // System.out.println("INFO PAgent StackTrace Info:");
+        // new Throwable().printStackTrace();
+
+        String dotSeparatedClassName = perturbationPoint.exceptionType.replace("/", ".");
+        Class<?> p = null;
+        try {
+            // sometimes we cannot load the specific classes if we directly use system class loader
+            p = Thread.currentThread().getContextClassLoader().loadClass(dotSeparatedClassName);
+            if (Throwable.class.isAssignableFrom(p)) {
+                return (Throwable) p.newInstance();
+            } else {
+                return new PerturbationAgentException(perturbationPoint.exceptionType);
+            }
+        } catch (IllegalAccessException e) {
+            return new PerturbationAgentException(perturbationPoint.exceptionType);
+        } catch (InstantiationException e) {
+            // the target exception has no default constructor
+            // since lots of exception has a constructor with a string parameter, try it again
+            try {
+                return (Throwable) p.getConstructor(String.class).newInstance("INJECTED BY PAGENT: " + dotSeparatedClassName);
+            } catch (Exception e1) {
+                return new PerturbationAgentException(perturbationPoint.exceptionType);
+            }
+        } catch (ClassNotFoundException e) {
+            return new PerturbationAgentException(perturbationPoint.exceptionType);
+        }
     }
 
     public static void registerPerturbationPoint(PerturbationPoint perturbationPoint, AgentArguments arguments) {
@@ -63,14 +108,16 @@ public class PAgent {
                 PrintWriter out = null;
                 if (csvFile.exists()) {
                     out = new PrintWriter(new FileWriter(csvFile, true));
-                    out.println(String.format("%s,%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className,
-                            perturbationPoint.methodName, perturbationPoint.indexNumber, perturbationPoint.mode));
+                    out.println(String.format("%s,%s,%s,%s,%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className,
+                            perturbationPoint.methodName, perturbationPoint.exceptionType, perturbationPoint.indexNumber,
+                            perturbationPoint.perturbationCountdown, perturbationPoint.chanceOfFailure, perturbationPoint.mode));
                 } else {
                     csvFile.createNewFile();
                     out = new PrintWriter(new FileWriter(csvFile));
-                    out.println("key,className,methodName,indexNumber,mode");
-                    out.println(String.format("%s,%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className,
-                            perturbationPoint.methodName, perturbationPoint.indexNumber, perturbationPoint.mode));
+                    out.println("key,className,methodName,exceptionType,indexNumber,countdown,rate,mode");
+                    out.println(String.format("%s,%s,%s,%s,%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className,
+                            perturbationPoint.methodName, perturbationPoint.exceptionType, perturbationPoint.indexNumber,
+                            perturbationPoint.perturbationCountdown, perturbationPoint.chanceOfFailure, perturbationPoint.mode));
                 }
                 out.flush();
                 out.close();
@@ -105,11 +152,11 @@ public class PAgent {
 
     public static void updateModesByFile(String filepath) {
         CSVReader reader = null;
-        List<String[]> foPoints = null;
+        List<String[]> perturbationPoints = null;
 
         try {
             reader = new CSVReader(new FileReader(filepath));
-            foPoints = reader.readAll();
+            perturbationPoints = reader.readAll();
             reader.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -118,12 +165,12 @@ public class PAgent {
         }
 
         Map<String, String> kv = new HashMap<String, String>();
-        for (int i = 1; i < foPoints.size(); i++) {
-            String[] line = foPoints.get(i);
-            PerturbationPoint foPoint = perturbationPointsMap.get(line[0]);
-            if (foPoint != null) {
-                foPoint.mode = line[3];
-                perturbationPointsMap.put(line[0], foPoint);
+        for (int i = 1; i < perturbationPoints.size(); i++) {
+            String[] line = perturbationPoints.get(i);
+            PerturbationPoint perturbationPoint = perturbationPointsMap.get(line[0]);
+            if (perturbationPoint != null) {
+                perturbationPoint.mode = line[7];
+                perturbationPointsMap.put(line[0], perturbationPoint);
             }
         }
     }
