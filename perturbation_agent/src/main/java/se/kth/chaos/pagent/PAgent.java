@@ -33,7 +33,6 @@ public class PAgent {
     }
 
     public static void timeoutPerturbation(String perturbationPointKey) throws Throwable {
-        System.out.printf("INFO PAgent in a method with timeout try-catch");
         PerturbationPoint perturbationPoint = perturbationPointsMap.getOrDefault(perturbationPointKey, null);
 
         if (perturbationPoint.mode.equals("analysis")) {

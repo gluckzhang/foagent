@@ -123,7 +123,7 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
                 break;
         }
 
-        classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+        classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS); // COMPUTE_FRAMES does not work for some cases
         classNode.accept(classWriter);
 
 //        writeIntoClassFile(classNode.name, classWriter.toByteArray());
