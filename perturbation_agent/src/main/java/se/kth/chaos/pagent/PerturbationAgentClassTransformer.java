@@ -24,7 +24,6 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
     }
 
     private byte[] meddle(byte[] classFileBuffer) {
-        Random random = new Random();
         ClassReader classReader = new ClassReader(classFileBuffer);
         ClassWriter classWriter = null;
         ClassNode classNode = new ClassNode();
@@ -93,7 +92,7 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
                                 PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, indexNumber,
                                         arguments.defaultMode(), arguments.countdown(), arguments.chanceOfFailure());
                                 PAgent.registerPerturbationPoint(perturbationPoint, arguments);
-                                insnList.insertBefore(node, OperationMode.ARRAY_PONE.generateByteCode(classNode, method, arguments, perturbationPoint));
+                                insnList.insertBefore(node, arguments.operationMode().generateByteCode(classNode, method, arguments, perturbationPoint));
                                 indexNumber = indexNumber + 1;
                             }
                         }
@@ -101,22 +100,23 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
                 break;
             case TIMEOUT:
                 classNode.methods.stream()
-                        .filter(method -> !method.name.startsWith("<"))
-                        .filter(method -> arguments.filter().matches(classNode.name, method.name))
-                        .filter(method -> method.tryCatchBlocks.size() > 0)
-                        .forEach(method -> {
-                            int index = 0;
-                            for (TryCatchBlockNode tc : method.tryCatchBlocks) {
-                                if (tc.type.equals("null")) continue; // "synchronized" keyword or try-finally block might make the type empty
-                                if (inTimeoutExceptionList(tc.type)) {
-                                    PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, index, tc.type,
-                                            arguments.defaultMode(), arguments.countdown(), arguments.chanceOfFailure());
-                                    PAgent.registerPerturbationPoint(perturbationPoint, arguments);
-                                    method.instructions.insert(tc.start, arguments.operationMode().generateByteCode(classNode, method, arguments, perturbationPoint));
-                                    index ++;
-                                }
+                    .filter(method -> !method.name.startsWith("<"))
+                    .filter(method -> arguments.filter().matches(classNode.name, method.name))
+                    .filter(method -> method.tryCatchBlocks.size() > 0)
+                    .forEach(method -> {
+                        int indexNumber = 0;
+                        for (TryCatchBlockNode tc : method.tryCatchBlocks) {
+                            if (tc.type.equals("null")) continue; // "synchronized" keyword or try-finally block might make the type empty
+                            if (inTimeoutExceptionList(tc.type)) {
+                                PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, indexNumber, tc.type,
+                                        arguments.defaultMode(), arguments.countdown(), arguments.chanceOfFailure());
+                                PAgent.registerPerturbationPoint(perturbationPoint, arguments);
+                                InsnList newInstructions = arguments.operationMode().generateByteCode(classNode, method, arguments, perturbationPoint);
+                                method.instructions.insert(tc.start, newInstructions);
+                                indexNumber = indexNumber + 1;
                             }
-                        });
+                        }
+                    });
                 break;
             default:
                 // nothing now
@@ -125,6 +125,8 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
 
         classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
         classNode.accept(classWriter);
+
+//        writeIntoClassFile(classNode.name, classWriter.toByteArray());
 
         return classWriter != null ? classWriter.toByteArray() : classFileBuffer;
     }

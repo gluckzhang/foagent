@@ -32,14 +32,19 @@ public class PAgent {
         return result;
     }
 
-    public static void timeoutPerturbation(String perturbationPointKey) {
+    public static void timeoutPerturbation(String perturbationPointKey) throws Throwable {
+        System.out.printf("INFO PAgent in a method with timeout try-catch");
         PerturbationPoint perturbationPoint = perturbationPointsMap.getOrDefault(perturbationPointKey, null);
-        if (perturbationPoint != null && perturbationPoint.mode.equals("timeout") && perturbationPoint.perturbationCountdown > 0) {
-            if (shouldActivate(perturbationPoint.chanceOfFailure)) {
-                System.out.printf("INFO PAgent timeout perturbation activated in %/%(%), countDown: %d\n",
-                        perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.exceptionType, perturbationPoint.perturbationCountdown);
 
+        if (perturbationPoint.mode.equals("analysis")) {
+            System.out.printf("INFO PAgent try-catch with timeout exception executed in %s/%s(%s)\n",
+                    perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.exceptionType);
+        } else if (perturbationPoint != null && perturbationPoint.mode.equals("timeout") && perturbationPoint.perturbationCountdown > 0) {
+            if (shouldActivate(perturbationPoint.chanceOfFailure)) {
+                System.out.printf("INFO PAgent timeout perturbation activated in %s/%s(%s), countDown: %d\n",
+                        perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.exceptionType, perturbationPoint.perturbationCountdown);
                 perturbationPoint.perturbationCountdown = perturbationPoint.perturbationCountdown - 1;
+                throw throwOrDefault(perturbationPoint);
             }
         }
     }
@@ -58,10 +63,6 @@ public class PAgent {
     public static boolean shouldActivate(double chanceOfFailure) {
         Random random = new Random();
         return random.nextDouble() < chanceOfFailure;
-    }
-
-    public static void throwException(PerturbationPoint perturbationPoint) throws Throwable {
-        throw throwOrDefault(perturbationPoint);
     }
 
     public static Throwable throwOrDefault(PerturbationPoint perturbationPoint) {

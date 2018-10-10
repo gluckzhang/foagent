@@ -29,13 +29,20 @@ public enum OperationMode {
             return list;
         }
     },
-
     TIMEOUT {
         @Override
         public InsnList generateByteCode(ClassNode classNode, MethodNode method, AgentArguments arguments, PerturbationPoint perturbationPoint) {
             InsnList list = new InsnList();
-            System.out.printf("PAgent INFO in %s/%s, timeout exception try-catch founded, type: %s\n", perturbationPoint.className,
-                    perturbationPoint.methodName, perturbationPoint.exceptionType);
+
+            list.add(new LdcInsnNode(perturbationPoint.key));
+            list.add(new MethodInsnNode(
+                    Opcodes.INVOKESTATIC,
+                    "se/kth/chaos/pagent/PAgent",
+                    "timeoutPerturbation",
+                    "(Ljava/lang/String;)V",
+                    false // this is not a method on an interface
+            ));
+
             return list;
         }
     };
