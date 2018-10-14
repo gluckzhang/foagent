@@ -32,6 +32,27 @@ public class PAgent {
         return result;
     }
 
+    public static void throwExceptionPerturbation(String perturbationPointKey) throws Throwable {
+        PerturbationPoint perturbationPoint = perturbationPointsMap.getOrDefault(perturbationPointKey, null);
+
+        if (perturbationPoint != null) {
+            if (perturbationPoint.mode.equals("analysis")) {
+                System.out.printf("INFO PAgent a method which throws an exception executed in %s/%s(%s)\n",
+                        perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.exceptionType);
+            } else if (perturbationPoint.mode.equals("throw_e")) {
+                if (perturbationPoint.perturbationCountdown > 0 && shouldActivate(perturbationPoint.chanceOfFailure)) {
+                    System.out.printf("INFO PAgent throw exception perturbation activated in %s/%s(%s), countDown: %d\n",
+                            perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.exceptionType, perturbationPoint.perturbationCountdown);
+                    perturbationPoint.perturbationCountdown = perturbationPoint.perturbationCountdown - 1;
+                    throw throwOrDefault(perturbationPoint);
+                } else {
+                    System.out.printf("INFO PAgent throw exception perturbation executed normally in %s/%s(%s), countDown: %d\n",
+                            perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.exceptionType, perturbationPoint.perturbationCountdown);
+                }
+            }
+        }
+    }
+
     public static void timeoutPerturbation(String perturbationPointKey) throws Throwable {
         PerturbationPoint perturbationPoint = perturbationPointsMap.getOrDefault(perturbationPointKey, null);
 

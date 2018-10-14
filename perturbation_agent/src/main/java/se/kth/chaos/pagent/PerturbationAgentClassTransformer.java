@@ -118,6 +118,25 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
                         }
                     });
                 break;
+            case THROW_E:
+                classNode.methods.stream()
+                    .filter(method -> !method.name.startsWith("<"))
+                    .filter(method -> arguments.filter().matches(classNode.name, method.name))
+                    .filter(method -> method.exceptions.size() > 0)
+                    .forEach(method -> {
+                        int indexNumber = 0;
+                        for (String exception : method.exceptions) {
+                            if (arguments.exceptionFilter().matches(exception)) {
+                                PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, indexNumber, exception,
+                                        arguments.defaultMode(), arguments.countdown(), arguments.chanceOfFailure());
+                                PAgent.registerPerturbationPoint(perturbationPoint, arguments);
+                                InsnList newInstructions = arguments.operationMode().generateByteCode(classNode, method, arguments, perturbationPoint);
+                                method.instructions.insertBefore(method.instructions.getFirst(), newInstructions);
+                                indexNumber = indexNumber + 1;
+                            }
+                        }
+                    });
+                break;
             default:
                 // nothing now
                 break;

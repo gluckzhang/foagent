@@ -45,6 +45,23 @@ public enum OperationMode {
 
             return list;
         }
+    },
+    THROW_E {
+        @Override
+        public InsnList generateByteCode(ClassNode classNode, MethodNode method, AgentArguments arguments, PerturbationPoint perturbationPoint) {
+            InsnList list = new InsnList();
+
+            list.add(new LdcInsnNode(perturbationPoint.key));
+            list.add(new MethodInsnNode(
+                    Opcodes.INVOKESTATIC,
+                    "se/kth/chaos/pagent/PAgent",
+                    "throwExceptionPerturbation",
+                    "(Ljava/lang/String;)V",
+                    false // this is not a method on an interface
+            ));
+
+            return list;
+        }
     };
 
     public static OperationMode fromLowerCase(String mode) {
