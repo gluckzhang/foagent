@@ -64,6 +64,7 @@ def get_md5_key(src):
 
 def analyze_log(filepath):
     finding_pattern = re.compile(r'Method: ([\w/\$\<\>]+), type: ([\w/\$]+)')
+    stackinfo_pattern = re.compile(r'\[Monitoring Agent\] Stack info \d:([\w/\$\<\>]+)')
     handling_pattern = re.compile(r'is handled by: ([\w/\$]+)')
     total_count = 0
     result = dict()
@@ -75,6 +76,7 @@ def analyze_log(filepath):
         handled_by = ""
         distance = 0
         stack_height = 0
+        fo_point = list()
 
         for line in logfile:
             if "Got an exception from Method" in line:
@@ -100,7 +102,12 @@ def analyze_log(filepath):
                         if match.group(1) in layer:
                             break
                         else:
+                            method_name = stackinfo_pattern.search(layer)
+                            fo_point.append(str(distance) + ": " + method_name.group(1))
                             distance = distance + 1
+                    if distance == 0:
+                        fo_point.append(str(distance) + ": " + match.group(1))
+
                 else:
                     handled_by = "not handled"
 
@@ -118,6 +125,8 @@ def analyze_log(filepath):
                     result[key].append(handled_by)
                     result[key].append(distance)
                     result[key].append(stack_height)
+                    result[key].append("; ".join(fo_point))
+                fo_point.clear()
             else:
                 continue
     
@@ -129,7 +138,7 @@ def analyze_log(filepath):
 def write2csv(filename, dataset):
     with open(filename, 'w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["class and method", "exception", "count", "handled by", "distance", "stack height"])
+        writer.writerow(["class and method", "exception", "count", "handled by", "distance", "stack height", "fo point"])
         for line in dataset:
             writer.writerow(dataset[line])
 

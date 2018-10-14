@@ -21,7 +21,7 @@ using namespace std;
 static jvmtiEnv *gb_jvmti = NULL;
 static jvmtiCapabilities gb_capa;
 static jrawMonitorID gb_lock;
-static string logfileName = "monitoring_agent.log";
+static char logfileName[40] = "monitoring_agent.log";
 
 /*
  * Case Sensitive Implementation of startsWith()
