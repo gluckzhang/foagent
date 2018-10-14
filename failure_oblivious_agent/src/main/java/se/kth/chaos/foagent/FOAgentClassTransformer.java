@@ -50,9 +50,10 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
                         method.accept(classVisitor);
                     });
                 //*/
+
                 if (!arguments.filter().matchClassName(classNode.name)) break;
 
-                classWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+                classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
                 FoClassVisitor foClassVisitor = new FoClassVisitor(ASM4, classWriter, arguments);
                 ClassVisitor classVisitor = new CheckClassAdapter(foClassVisitor);
                 classReader.accept(classVisitor, 0);
@@ -105,8 +106,8 @@ public class FOAgentClassTransformer implements ClassFileTransformer {
                 break;
 
             default:
-	            // nothing now
-	            break;
+                // nothing now
+                break;
         }
 
         return classWriter != null ? classWriter.toByteArray() : classFileBuffer;

@@ -81,7 +81,7 @@ public class FoMethodVisitor extends MethodVisitor {
                 visitLdcInsn(foPoint.key);
                 visitVarInsn(ALOAD, 1); // load it
                 visitMethodInsn(INVOKESTATIC,
-                        "se/kth/chaos/FOAgent",
+                        "se/kth/chaos/foagent/FOAgent",
                         "failureObliviousOrNot",
                         "(Ljava/lang/String;Ljava/lang/Throwable;)V",
                         false);
