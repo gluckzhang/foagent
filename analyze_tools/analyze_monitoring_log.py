@@ -76,7 +76,6 @@ def analyze_log(filepath):
         handled_by = ""
         distance = 0
         stack_height = 0
-        fo_point = list()
 
         for line in logfile:
             if "Got an exception from Method" in line:
@@ -88,6 +87,7 @@ def analyze_log(filepath):
                 stackinfo = logfile.readline()
                 stack_height = 0
                 stack_layers = list()
+                fo_point = list()
                 while "Stack info" in stackinfo:
                     stack_height = stack_height + 1
                     stack_layers.append(stackinfo)
@@ -110,6 +110,9 @@ def analyze_log(filepath):
 
                 else:
                     handled_by = "not handled"
+                    for index, layer in enumerate(stack_layers):
+                        method_name = stackinfo_pattern.search(layer)
+                        fo_point.append(str(index) + ": " + method_name.group(1))
 
                 key = get_md5_key(location + exception + handled_by)
                 if key in result:
@@ -126,7 +129,6 @@ def analyze_log(filepath):
                     result[key].append(distance)
                     result[key].append(stack_height)
                     result[key].append("; ".join(fo_point))
-                fo_point.clear()
             else:
                 continue
     
