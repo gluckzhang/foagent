@@ -62,8 +62,8 @@ static void JNICALL callbackException(jvmtiEnv *jvmti_env, JNIEnv *env, jthread 
         ofstream logFileStream;
         logFileStream.open(logfileName, ios::app);
 
-        char *name,*sig,*gsig;
-        jvmtiError error = gb_jvmti->GetMethodName(method, &name, &sig, &gsig);
+        char *name,*methodSig,*sig,*gsig;
+        jvmtiError error = gb_jvmti->GetMethodName(method, &name, &methodSig, &gsig);
         if (error != JVMTI_ERROR_NONE) {
             logFileStream << "ERROR: GetMethodName!" << endl;
             return;
@@ -86,8 +86,8 @@ static void JNICALL callbackException(jvmtiEnv *jvmti_env, JNIEnv *env, jthread 
         string exceptionName = sig;
 
         getLocalTime(localTime);
-        logFileStream << "[Monitoring Agent] " << localTime << " Got an exception from Method: " << className.substr(1, className.length() - 2) << "/" << name 
-            << ", type: " << exceptionName.substr(1, exceptionName.length() - 2) << endl;
+        logFileStream << "[Monitoring Agent] " << localTime << " Got an exception from class: " << className.substr(1, className.length() - 2) << ", method: " << name 
+            << ", signature: " << methodSig << ", type: " << exceptionName.substr(1, exceptionName.length() - 2) << endl;
 
         // get stack info
         jint frameCount;
@@ -101,14 +101,15 @@ static void JNICALL callbackException(jvmtiEnv *jvmti_env, JNIEnv *env, jthread 
         string methodName;
 
         for (int i = 0; i < count; i++) {
-            error = gb_jvmti->GetMethodName(frames[i].method, &frame, NULL, NULL);
+            error = gb_jvmti->GetMethodName(frames[i].method, &frame, &methodSig, NULL);
             methodName = frame;
 
             error = gb_jvmti->GetMethodDeclaringClass(frames[i].method, &declaring_class);
             error = gb_jvmti->GetClassSignature(declaring_class, &sig, &gsig);
             className = sig;
 
-            logFileStream << "[Monitoring Agent] " << "Stack info " << i << ":" << className.substr(1, className.length() - 2) << "/" << methodName << endl;
+            logFileStream << "[Monitoring Agent] " << "Stack info " << i << ", class: " << className.substr(1, className.length() - 2) << ", method: " << methodName
+            << ", signature: " << methodSig << endl;
         }
 
 
@@ -116,12 +117,13 @@ static void JNICALL callbackException(jvmtiEnv *jvmti_env, JNIEnv *env, jthread 
         if (catch_method == 0) {
             logFileStream << "[Monitoring Agent] " << localTime << " This exception is not handled by business code" << endl;
         } else {
-            error = gb_jvmti->GetMethodName(catch_method, &name, &sig, &gsig);
+            error = gb_jvmti->GetMethodName(catch_method, &name, &methodSig, &gsig);
             error = gb_jvmti->GetMethodDeclaringClass(catch_method, &declaring_class);
             error = gb_jvmti->GetClassSignature(declaring_class, &sig, &gsig);
             className = sig;
             getLocalTime(localTime);
-            logFileStream << "[Monitoring Agent] " << localTime << " This exception is handled by: " << className.substr(1, className.length() - 2) << "/" << name << endl;
+            logFileStream << "[Monitoring Agent] " << localTime << " This exception is handled by class: " << className.substr(1, className.length() - 2)
+                << ", method: " << name << ", signature: " << methodSig << endl;
         }
 
         fflush(stdout);
