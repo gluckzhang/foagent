@@ -129,15 +129,15 @@ public class PAgent {
                 PrintWriter out = null;
                 if (csvFile.exists()) {
                     out = new PrintWriter(new FileWriter(csvFile, true));
-                    out.println(String.format("%s,%s,%s,%s,%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className,
-                            perturbationPoint.methodName, perturbationPoint.exceptionType, perturbationPoint.indexNumber,
+                    out.println(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className,
+                            perturbationPoint.methodName, perturbationPoint.methodSignature, perturbationPoint.exceptionType, perturbationPoint.indexNumber,
                             perturbationPoint.perturbationCountdown, perturbationPoint.chanceOfFailure, perturbationPoint.mode));
                 } else {
                     csvFile.createNewFile();
                     out = new PrintWriter(new FileWriter(csvFile));
-                    out.println("key,className,methodName,exceptionType,indexNumber,countdown,rate,mode");
-                    out.println(String.format("%s,%s,%s,%s,%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className,
-                            perturbationPoint.methodName, perturbationPoint.exceptionType, perturbationPoint.indexNumber,
+                    out.println("key,className,methodName,methodSignature,exceptionType,indexNumber,countdown,rate,mode");
+                    out.println(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className,
+                            perturbationPoint.methodName, perturbationPoint.methodSignature, perturbationPoint.exceptionType, perturbationPoint.indexNumber,
                             perturbationPoint.perturbationCountdown, perturbationPoint.chanceOfFailure, perturbationPoint.mode));
                 }
                 out.flush();
@@ -190,7 +190,7 @@ public class PAgent {
             String[] line = perturbationPoints.get(i);
             PerturbationPoint perturbationPoint = perturbationPointsMap.get(line[0]);
             if (perturbationPoint != null) {
-                perturbationPoint.mode = line[7];
+                perturbationPoint.mode = line[8];
                 perturbationPointsMap.put(line[0], perturbationPoint);
             }
         }

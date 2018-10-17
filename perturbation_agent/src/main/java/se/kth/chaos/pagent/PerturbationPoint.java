@@ -7,16 +7,18 @@ public class PerturbationPoint {
     public String key;
     public String className;
     public String methodName;
+    public String methodSignature;
     public String exceptionType;
     public int indexNumber;
     public String mode;
     public int perturbationCountdown;
     public double chanceOfFailure;
 
-    public PerturbationPoint(String className, String methodName, int indexNumber,
+    public PerturbationPoint(String className, String methodName, String methodSignature, int indexNumber,
                              String defaultMode, int perturbationCountdown, double chanceOfFailure) {
         this.className = className;
         this.methodName = methodName;
+        this.methodSignature = methodSignature;
         this.indexNumber = indexNumber;
         this.mode = defaultMode;
         this.perturbationCountdown = perturbationCountdown;
@@ -31,9 +33,9 @@ public class PerturbationPoint {
         }
     }
 
-    public PerturbationPoint(String className, String methodName, int indexNumber, String exceptionType,
+    public PerturbationPoint(String className, String methodName, String methodSignature, int indexNumber, String exceptionType,
                              String defaultMode, int perturbationCountdown, double chanceOfFailure) {
-        this(className, methodName, indexNumber, defaultMode, perturbationCountdown, chanceOfFailure);
+        this(className, methodName, methodSignature, indexNumber, defaultMode, perturbationCountdown, chanceOfFailure);
         this.exceptionType = exceptionType;
     }
 
