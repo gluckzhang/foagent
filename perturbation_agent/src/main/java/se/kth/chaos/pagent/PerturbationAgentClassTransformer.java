@@ -56,7 +56,7 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
 
                                     System.err.println("INFO PerturbationAgent the array index is:" + readingIndex);
 
-                                    PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, method.signature, indexNumber,
+                                    PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, method.desc, indexNumber,
                                             arguments.defaultMode(), 0, arguments.chanceOfFailure());
                                     PAgent.registerPerturbationPoint(perturbationPoint, arguments);
                                     indexNumber = indexNumber + 1;
@@ -89,7 +89,7 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
                                 }
 
                                 // System.out.println("INFO PerturbationAgent the array index is:" + readingIndex);
-                                PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, method.signature, indexNumber,
+                                PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, method.desc, indexNumber,
                                         arguments.defaultMode(), arguments.countdown(), arguments.chanceOfFailure());
                                 PAgent.registerPerturbationPoint(perturbationPoint, arguments);
                                 insnList.insertBefore(node, arguments.operationMode().generateByteCode(classNode, method, arguments, perturbationPoint));
@@ -108,7 +108,7 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
                         for (TryCatchBlockNode tc : method.tryCatchBlocks) {
                             if (tc.type.equals("null")) continue; // "synchronized" keyword or try-finally block might make the type empty
                             if (inTimeoutExceptionList(tc.type)) {
-                                PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, method.signature, indexNumber, tc.type,
+                                PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, method.desc, indexNumber, tc.type,
                                         arguments.defaultMode(), arguments.countdown(), arguments.chanceOfFailure());
                                 PAgent.registerPerturbationPoint(perturbationPoint, arguments);
                                 InsnList newInstructions = arguments.operationMode().generateByteCode(classNode, method, arguments, perturbationPoint);
@@ -127,7 +127,7 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
                         int indexNumber = 0;
                         for (String exception : method.exceptions) {
                             if (arguments.exceptionFilter().matches(exception)) {
-                                PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, method.signature, indexNumber, exception,
+                                PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, method.desc, indexNumber, exception,
                                         arguments.defaultMode(), arguments.countdown(), arguments.chanceOfFailure());
                                 PAgent.registerPerturbationPoint(perturbationPoint, arguments);
                                 InsnList newInstructions = arguments.operationMode().generateByteCode(classNode, method, arguments, perturbationPoint);
