@@ -10,6 +10,7 @@
   <packaging>pom</packaging>
 
   <modules>
+    <module>agents_controller</module>
     <module>failure_oblivious_agent</module>
     <module>monitoring_agent</module>
     <module>perturbation_agent</module>
