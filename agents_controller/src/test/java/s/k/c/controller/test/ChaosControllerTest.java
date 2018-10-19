@@ -12,7 +12,7 @@ public class ChaosControllerTest {
         controller.updateTargetPid(5584);
 
 //        controller.attachChaosMonkey();
-        List<String[]> registeredTCinfo = controller.readTcInfoFromFile("C:/development/chaosagent/controller/evaluation_v2/chaosMonkey.csv");
+        List<String[]> registeredTCinfo = controller.readInfoFromFile("C:/development/chaosagent/controller/evaluation_v2/chaosMonkey.csv");
         Map<String, String> memcachedKV = new HashMap<String, String>();
         for (int i = 1; i < registeredTCinfo.size(); i++) {
             String[] tc = registeredTCinfo.get(i);

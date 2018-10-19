@@ -10,8 +10,8 @@ public class ThrowExceptionOnTTorrent {
     public static void main(String[] args) {
         Process process = null;
         String rootPath = "ttorrent_evaluation_1.5/throw_exception_typical";
-        String javaagentPath = System.getProperty("user.dir") + "/target/foagent-perturbation-jar-with-dependencies.jar";
-        String monitoringAgentPath = System.getProperty("user.dir") + "../monitoring_agent/src/main/cpp/foagent.so";
+        String javaagentPath = System.getProperty("user.dir") + "/../perturbation_agent/target/foagent-perturbation-jar-with-dependencies.jar";
+        String monitoringAgentPath = System.getProperty("user.dir") + "/../monitoring_agent/src/main/cpp/foagent.so";
         String endingPattern = "BitTorrent client signing off";
         String threadName = "ttorrent-1.5-client.jar";
         String targetCsv = "perturbationPointsList_tasks.csv";
@@ -21,7 +21,6 @@ public class ThrowExceptionOnTTorrent {
         AgentsController controller = new AgentsController("localhost", 11211);
 
         if (osName.contains("Windows")) {
-
         } else {
             System.out.println("[AGENT_CONTROLLER] Let's begin our experiment!");
 
@@ -156,12 +155,14 @@ public class ThrowExceptionOnTTorrent {
             task.add("process cpu time(in seconds)");
             task.add("average memory usage(in MB)");
             task.add("peak thread count");
+            tasksInfo.set(0, task.toArray(new String[task.size()]));
 
             for (int i = 1; i < tasksInfo.size(); i++) {
                 task = new ArrayList<>(Arrays.asList(tasksInfo.get(i)));
                 for (int j = 0; j < 8; j++) {
                     task.add("-");
                 }
+                tasksInfo.set(i, task.toArray(new String[task.size()]));
             }
 
             controller.write2csvfile(filepath, tasksInfo);
