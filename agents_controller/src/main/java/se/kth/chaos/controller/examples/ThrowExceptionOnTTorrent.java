@@ -16,7 +16,7 @@ public class ThrowExceptionOnTTorrent {
         String threadName = "ttorrent-1.5-client.jar";
         String targetCsv = "perturbationPointsList_tasks.csv";
         String correctChecksum = "812ac191b8898b33aed4aef9ab066b5a";
-        int timeout = 180;
+        int timeout = 240;
         String osName = System.getProperty("os.name");
         AgentsController controller = new AgentsController("localhost", 11211);
 
@@ -123,7 +123,6 @@ public class ThrowExceptionOnTTorrent {
                     System.out.println("[AGENT_CONTROLLER] process cpu time(in seconds): " + JMXMonitoringTool.processCpuTime / 1000000000);
                     System.out.println("[AGENT_CONTROLLER] average memory usage(in MB): " + JMXMonitoringTool.averageMemoryUsage / 1000000);
                     System.out.println("[AGENT_CONTROLLER] peak thread count: " + JMXMonitoringTool.peakThreadCount);
-                    System.out.println("----");
 
                     // make sure the thread is killed
                     int pid = JMXMonitoringTool.getPidByThreadName(threadName);
@@ -138,6 +137,7 @@ public class ThrowExceptionOnTTorrent {
 
                 controller.write2csvfile(rootPath + "/" + targetCsv, tasksInfo);
                 System.out.println("[AGENT_CONTROLLER] finish the experiment at " + filter);
+                System.out.println("----");
             }
         }
     }
