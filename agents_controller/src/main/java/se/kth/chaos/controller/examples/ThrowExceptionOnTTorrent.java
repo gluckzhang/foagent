@@ -154,6 +154,13 @@ public class ThrowExceptionOnTTorrent {
                 controller.write2csvfile(rootPath + "/" + targetCsv, tasksInfo);
                 System.out.println("[AGENT_CONTROLLER] finish the experiment at " + filter);
                 System.out.println("----");
+
+                // good job, take a rest
+                try {
+                    Thread.currentThread().sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
