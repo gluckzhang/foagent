@@ -23,7 +23,6 @@ public class ThrowExceptionOnTTorrent {
         if (osName.contains("Windows")) {
         } else {
             System.out.println("[AGENT_CONTROLLER] Let's begin our experiment!");
-
             List<String[]> tasksInfo = checkHeaders(controller, rootPath + "/" + targetCsv);
 
             File targetFile = null;
@@ -38,21 +37,34 @@ public class ThrowExceptionOnTTorrent {
                 if (targetFile.exists()) {
                     targetFile.delete();
                 }
+                if (!task.get(9).equals("yes")) continue;
 
                 String filter = task.get(1) + "/" + task.get(2);
                 String exceptionType = task.get(4);
                 String injections = task.get(6);
                 String rate = task.get(7);
                 String mode = task.get(8);
+                boolean monitoringAgentOn = false;
                 System.out.println("[AGENT_CONTROLLER] start an experiment at " + filter);
                 System.out.println(String.format("[AGENT_CONTROLLER] exceptionType: %s, injections: %s, rate: %s, mode: %s", exceptionType, injections, rate, mode));
 
                 try {
-                    String command = String.format("timeout --signal=9 %s java -noverify -javaagent:%s=mode:throw_e," +
+                    String command = null;
+                    if (task.get(6).equals("1")) {
+                        monitoringAgentOn = true;
+                        command = String.format("timeout --signal=9 %s java -noverify -agentpath:%s -javaagent:%s=mode:throw_e," +
+                                        "defaultMode:%s,filter:%s,efilter:%s,countdown:%s,rate:%s " +
+                                        "-jar %s -o . --max-download 1024 -s 0 ubuntu-14.04.5-server-i386.iso.torrent 2>&1",
+                                timeout, monitoringAgentPath, javaagentPath, mode, filter.replace("$", "\\$"),
+                                exceptionType, injections, rate, threadName);
+                    } else {
+                        command = String.format("timeout --signal=9 %s java -noverify -javaagent:%s=mode:throw_e," +
                                         "defaultMode:%s,filter:%s,efilter:%s,countdown:%s,rate:%s " +
                                         "-jar %s -o . --max-download 1024 -s 0 ubuntu-14.04.5-server-i386.iso.torrent 2>&1",
                                 timeout, javaagentPath, mode, filter.replace("$", "\\$"), exceptionType,
                                 injections, rate, threadName);
+                    }
+
                     process = Runtime.getRuntime().exec(new String[]{"bash", "-c", command}, null, new File(rootPath));
 
                     int input_pid = JMXMonitoringTool.getPidByThreadName(threadName);
@@ -93,8 +105,7 @@ public class ThrowExceptionOnTTorrent {
                     }
 
                     exitValue = process.waitFor();
-                    task.set(9, String.valueOf(normalExecutions));
-                    task.set(10, String.valueOf(injectionExecutions));
+                    task.set(11, injectionExecutions + "out of " + normalExecutions);
                     targetFile = new File(rootPath + "/ubuntu-14.04.5-server-i386.iso");
                     if (targetFile.exists()) {
                         process = Runtime.getRuntime().exec("md5sum ubuntu-14.04.5-server-i386.iso", null, new File(rootPath));
@@ -103,23 +114,23 @@ public class ThrowExceptionOnTTorrent {
                         bufferedReader = new BufferedReader(inputStreamReader);
                         line = bufferedReader.readLine();
                         if (line.split(" ")[0].equals(correctChecksum)) {
-                            task.set(12, "yes");
+                            task.set(13, "yes");
                         } else {
-                            task.set(12, "checksum mismatch");
+                            task.set(13, "checksum mismatch");
                         }
                     } else {
-                        task.set(12, "no");
+                        task.set(13, "no");
                     }
-                    task.set(13, endingFound ? "0" : String.valueOf(exitValue));
-                    task.set(14, String.valueOf(JMXMonitoringTool.processCpuTime / 1000000000));
-                    task.set(15, String.valueOf(JMXMonitoringTool.averageMemoryUsage / 1000000));
-                    task.set(16, String.valueOf(JMXMonitoringTool.peakThreadCount));
+                    task.set(14, endingFound ? "0" : String.valueOf(exitValue));
+                    task.set(15, String.valueOf(JMXMonitoringTool.processCpuTime / 1000000000));
+                    task.set(16, String.valueOf(JMXMonitoringTool.averageMemoryUsage / 1000000));
+                    task.set(17, String.valueOf(JMXMonitoringTool.peakThreadCount));
                     tasksInfo.set(i, task.toArray(new String[task.size()]));
 
                     System.out.println("[AGENT_CONTROLLER] normal execution times: " + normalExecutions);
                     System.out.println("[AGENT_CONTROLLER] injection execution times: " + injectionExecutions);
                     System.out.println("[AGENT_CONTROLLER] whether successfully downloaded the file: " + task.get(12));
-                    System.out.println("[AGENT_CONTROLLER] exit status: " + exitValue);
+                    System.out.println("[AGENT_CONTROLLER] exit status: " + (endingFound ? "0" : String.valueOf(exitValue)));
                     System.out.println("[AGENT_CONTROLLER] process cpu time(in seconds): " + JMXMonitoringTool.processCpuTime / 1000000000);
                     System.out.println("[AGENT_CONTROLLER] average memory usage(in MB): " + JMXMonitoringTool.averageMemoryUsage / 1000000);
                     System.out.println("[AGENT_CONTROLLER] peak thread count: " + JMXMonitoringTool.peakThreadCount);
@@ -128,6 +139,11 @@ public class ThrowExceptionOnTTorrent {
                     int pid = JMXMonitoringTool.getPidByThreadName(threadName);
                     if (pid > 0) {
                         process = Runtime.getRuntime().exec(new String[]{"bash", "-c", "kill -9 " + pid}, null, new File(rootPath));
+                    }
+                    if (monitoringAgentOn) {
+                        // rename the monitoring agent log
+                        targetFile = new File(rootPath + "/monitoring_agent.log");
+                        targetFile.renameTo(new File(rootPath + "/" + filter.replace("/", "_") + ".log"));
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -147,7 +163,8 @@ public class ThrowExceptionOnTTorrent {
         List<String> task = new ArrayList<>(Arrays.asList(tasksInfo.get(0)));
         if (task.size() < 10) {
             // need to add some headers
-            task.add("run times in normal"); // index should be 9
+            task.add("covered"); // index should be 9
+            task.add("run times in normal"); // index should be 10
             task.add("run times in injection");
             task.add("injection captured in the business log");
             task.add("downloaded the file");
@@ -159,7 +176,7 @@ public class ThrowExceptionOnTTorrent {
 
             for (int i = 1; i < tasksInfo.size(); i++) {
                 task = new ArrayList<>(Arrays.asList(tasksInfo.get(i)));
-                for (int j = 0; j < 8; j++) {
+                for (int j = 0; j < 9; j++) {
                     task.add("-");
                 }
                 tasksInfo.set(i, task.toArray(new String[task.size()]));

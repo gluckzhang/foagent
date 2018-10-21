@@ -37,8 +37,8 @@ public class PAgent {
 
         if (perturbationPoint != null) {
             if (perturbationPoint.mode.equals("analysis")) {
-                System.out.printf("INFO PAgent a method which throws an exception executed in %s/%s(%s)\n",
-                        perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.exceptionType);
+                System.out.printf("INFO PAgent a method which throws an exception executed in %s/%s(%s), key: %s\n",
+                        perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.exceptionType, perturbationPoint.key);
             } else if (perturbationPoint.mode.equals("throw_e")) {
                 if (perturbationPoint.perturbationCountdown > 0 && shouldActivate(perturbationPoint.chanceOfFailure)) {
                     System.out.printf("INFO PAgent throw exception perturbation activated in %s/%s(%s), countDown: %d\n",
