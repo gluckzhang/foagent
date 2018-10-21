@@ -105,7 +105,7 @@ public class ThrowExceptionOnTTorrent {
                     }
 
                     exitValue = process.waitFor();
-                    task.set(11, injectionExecutions + "out of " + normalExecutions);
+                    task.set(11, injectionExecutions + " out of " + normalExecutions);
                     targetFile = new File(rootPath + "/ubuntu-14.04.5-server-i386.iso");
                     if (targetFile.exists()) {
                         process = Runtime.getRuntime().exec("md5sum ubuntu-14.04.5-server-i386.iso", null, new File(rootPath));
