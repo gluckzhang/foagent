@@ -46,7 +46,7 @@ public class FoMethodVisitor extends MethodVisitor {
     public void visitCode() {
         super.visitCode();
         // TODO now we temporarily focus on void methods, remove methodDesc.endsWith("V") later
-        if (!methodName.startsWith("<") && arguments.filter().matchFullName(className, methodName) && methodDesc.endsWith("V")) {
+        if (arguments.filter().matchFullName(className, methodName) && methodDesc.endsWith("V")) {
             lTryBlockStart = new Label();
             lTryBlockEnd = new Label();
             lCatchBlockStart = new Label();
@@ -63,7 +63,7 @@ public class FoMethodVisitor extends MethodVisitor {
     @Override
     public void visitInsn(int opcode) {
         // TODO now we temporarily focus on void methods, remove methodDesc.endsWith("V") later
-        if (!methodName.startsWith("<") && arguments.filter().matchFullName(className, methodName) && methodDesc.endsWith("V")) {
+        if (arguments.filter().matchFullName(className, methodName) && methodDesc.endsWith("V")) {
             if ((opcode >= IRETURN && opcode <= RETURN)) { // || opcode == ATHROW) {
                 // TODO we need to consider void methods with a ATHROW in the end of body later
                 // closing the try block and opening the catch block
