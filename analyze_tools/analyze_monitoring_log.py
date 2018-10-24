@@ -3,7 +3,7 @@
 # Filename: analyze_monitoring_log.py
 
 import csv
-import sys
+import sys, os
 import getopt
 import time
 import logging
@@ -16,11 +16,12 @@ OUTPUTFILE = '' # default: result.csv
 def main():
     handle_args(sys.argv[1:])
 
-    result = analyze_log(LOG_PATH)
+    if (os.path.isdir(LOG_PATH)):
+        result = analyze_log_folder(LOG_PATH)
+    else:
+        result = analyze_log(LOG_PATH)
     write2csv(filename=OUTPUTFILE, dataset=result)
     logging.info("Analyzing finished")
-
-    # write2csv(filename=OUTPUTFILE, dataset=result)
 
 def handle_args(argv):
     global LOG_PATH
@@ -63,9 +64,9 @@ def get_md5_key(src):
     return m.hexdigest()
 
 def analyze_log(filepath):
-    finding_pattern = re.compile(r'class: ([\w/\$\<\>]+), method: ([\w\$]+), signature: ([\S^.]+), type: ([\w/\$]+)')
-    stackinfo_pattern = re.compile(r'\[Monitoring Agent\] Stack info \d, class: ([\w/\$\<\>]+), method: ([\w\$]+), signature: ([\S^.]+)')
-    handling_pattern = re.compile(r'is handled by class: ([\w/\$\<\>]+), method: ([\w\$]+), signature: ([\S^.]+)')
+    finding_pattern = re.compile(r'class: ([\w/\$\<\>]+), method: ([\w\$\<\>]+), signature: ([\S]+), type: ([\w/\$]+)')
+    stackinfo_pattern = re.compile(r'\[Monitoring Agent\] Stack info \d+, class: ([\w/\$\<\>]+), method: ([\w\$\<\>]+), signature: ([\S]+)')
+    handling_pattern = re.compile(r'is handled by class: ([\w/\$\<\>]+), method: ([\w\$\<\>]+), signature: ([\S]+)')
     total_count = 0
     result = dict()
 
@@ -87,6 +88,9 @@ def analyze_log(filepath):
                 method_signature = match.group(3)
                 exception_type = match.group(4)
                 total_count = total_count + 1
+                injected_exception = False
+                if class_name == "se/kth/chaos/pagent/PAgent":
+                    injected_exception = True
 
                 stackinfo = logfile.readline()
                 stack_height = 0
@@ -97,6 +101,14 @@ def analyze_log(filepath):
                     stack_layers.append(stackinfo)
                     stackinfo = logfile.readline()
 
+                # this means that the second layer in the stack is the original exception site
+                if injected_exception:
+                    del stack_layers[0]
+                    match = stackinfo_pattern.search(stack_layers[0])
+                    class_name = match.group(1)
+                    method_name = match.group(2)
+                    method_signature = match.group(3)
+
                 # when while loop ends, the last line should be handling result
                 match = handling_pattern.search(stackinfo)
                 distance = 0
@@ -106,21 +118,17 @@ def analyze_log(filepath):
                     handler_method_signature = match.group(3)
                     handled_by = handler_class_name + "/" + handler_method_name + " - " + handler_method_signature
                     for layer in stack_layers:
-                        if handler_class_name in layer and handler_method_name in layer:
-                            break
-                        else:
-                            layer_info = stackinfo_pattern.search(layer)
-                            fo_point.append(str(distance) + ": " + layer_info.group(1) + "/" + layer_info.group(2) + " - " + layer_info.group(3))
-                            distance = distance + 1
-                    if distance == 0:
+                        layer_info = stackinfo_pattern.search(layer)
                         fo_point.append(str(distance) + ": " + layer_info.group(1) + "/" + layer_info.group(2) + " - " + layer_info.group(3))
+                        distance = distance + 1
+                        if handler_class_name in layer and handler_method_name in layer: break
                 else:
                     handled_by = "not handled"
                     for index, layer in enumerate(stack_layers):
                         layer_info = stackinfo_pattern.search(layer)
                         fo_point.append(str(index) + ": " + layer_info.group(1) + "/" + layer_info.group(2) + " - " + layer_info.group(3))
 
-                key = get_md5_key(class_name + method_name + exception_type + handled_by)
+                key = get_md5_key(class_name + method_name + exception_type + handled_by + str(injected_exception))
                 if key in result:
                     count = result[key][4]
                     count = count + 1
@@ -136,7 +144,11 @@ def analyze_log(filepath):
                     result[key].append(handled_by)
                     result[key].append(distance)
                     result[key].append(stack_height)
-                    result[key].append("; ".join(fo_point))
+                    result[key].append(" | ".join(fo_point))
+                    if (injected_exception):
+                        result[key].append("no")
+                    else:
+                        result[key].append("yes")
             else:
                 continue
     
@@ -145,10 +157,20 @@ def analyze_log(filepath):
 
     return result
 
+def analyze_log_folder(path):
+    result = dict()
+    for logfile in os.listdir(path):
+        full_path = os.path.join(path, logfile)
+        if os.path.isfile(full_path) and os.path.splitext(logfile)[-1] == ".log":
+            logging.info("analyzing logfile: " + logfile)
+            result.update(analyze_log(full_path))
+    return result
+
+
 def write2csv(filename, dataset):
     with open(filename, 'w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["className", "methodName", "methodSignature", "exceptionType", "count", "handledBy", "distance", "stackHeight", "foPoint"])
+        writer.writerow(["className", "methodName", "methodSignature", "exceptionType", "count", "handledBy", "distance", "stackHeight", "foPoint", "normally happened"])
         for line in dataset:
             writer.writerow(dataset[line])
 
