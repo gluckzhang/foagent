@@ -107,7 +107,7 @@ public class JMXMonitoringTool {
         // System.out.println("average process cpu load is: " + totalCpuLoad / samplesCount); // print average process cpu load
         // System.out.println("average memory usage is: " + tempMemory / samplesCount); // print average memory usage
         // System.out.println("peak thread count is: " + peakThreadCount); // print peak thread count
-        averageMemoryUsage = tempMemory / samplesCount;
+        averageMemoryUsage = samplesCount > 0 ? tempMemory / samplesCount : 0;
 
         try {
             jmxc.close();
