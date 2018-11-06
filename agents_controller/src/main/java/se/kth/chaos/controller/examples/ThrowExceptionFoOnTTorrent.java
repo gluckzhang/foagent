@@ -69,6 +69,7 @@ public class ThrowExceptionFoOnTTorrent {
                             injections, rate, failureObliviousAgentPath,
                             foFilter.replace("$", "\\$").replace("<", "\\<").replace(">", "\\>"), threadName);
 
+                    System.out.println("[AGENT_CONTROLLER] command: " + command);
                     process = Runtime.getRuntime().exec(new String[]{"bash", "-c", command}, null, new File(rootPath));
 
                     int input_pid = JMXMonitoringTool.getPidByThreadName(threadName);
@@ -112,7 +113,7 @@ public class ThrowExceptionFoOnTTorrent {
                     }
 
                     exitValue = process.waitFor();
-                    task.set(11, String.format("%d(fo %d); normal: %d", injectionExecutions, foExecutions, normalExecutions));
+                    task.set(12, String.format("%d(fo %d); normal: %d", injectionExecutions, foExecutions, normalExecutions));
                     targetFile = new File(rootPath + "/ubuntu-14.04.5-server-i386.iso");
                     if (targetFile.exists()) {
                         process = Runtime.getRuntime().exec("md5sum ubuntu-14.04.5-server-i386.iso", null, new File(rootPath));
@@ -121,23 +122,23 @@ public class ThrowExceptionFoOnTTorrent {
                         bufferedReader = new BufferedReader(inputStreamReader);
                         line = bufferedReader.readLine();
                         if (line.split(" ")[0].equals(correctChecksum)) {
-                            task.set(13, "yes");
+                            task.set(14, "yes");
                         } else {
-                            task.set(13, "checksum mismatch");
+                            task.set(14, "checksum mismatch");
                         }
                     } else {
-                        task.set(13, "no");
+                        task.set(14, "no");
                     }
-                    task.set(14, endingFound ? "0" : String.valueOf(exitValue));
-                    task.set(15, String.valueOf(JMXMonitoringTool.processCpuTime / 1000000000));
-                    task.set(16, String.valueOf(JMXMonitoringTool.averageMemoryUsage / 1000000));
-                    task.set(17, String.valueOf(JMXMonitoringTool.peakThreadCount));
+                    task.set(15, endingFound ? "0" : String.valueOf(exitValue));
+                    task.set(16, String.valueOf(JMXMonitoringTool.processCpuTime / 1000000000));
+                    task.set(17, String.valueOf(JMXMonitoringTool.averageMemoryUsage / 1000000));
+                    task.set(18, String.valueOf(JMXMonitoringTool.peakThreadCount));
                     tasksInfo.set(i, task.toArray(new String[task.size()]));
 
                     System.out.println("[AGENT_CONTROLLER] normal execution times: " + normalExecutions);
                     System.out.println("[AGENT_CONTROLLER] injection execution times: " + injectionExecutions);
                     System.out.println("[AGENT_CONTROLLER] fo execution times: " + foExecutions);
-                    System.out.println("[AGENT_CONTROLLER] whether successfully downloaded the file: " + task.get(13));
+                    System.out.println("[AGENT_CONTROLLER] whether successfully downloaded the file: " + task.get(14));
                     System.out.println("[AGENT_CONTROLLER] exit status: " + (endingFound ? "0" : String.valueOf(exitValue)));
                     System.out.println("[AGENT_CONTROLLER] process cpu time(in seconds): " + JMXMonitoringTool.processCpuTime / 1000000000);
                     System.out.println("[AGENT_CONTROLLER] average memory usage(in MB): " + JMXMonitoringTool.averageMemoryUsage / 1000000);
