@@ -118,10 +118,11 @@ def analyze_log(filepath):
                     handler_method_signature = match.group(3)
                     handled_by = handler_class_name + "/" + handler_method_name + " - " + handler_method_signature
                     for layer in stack_layers:
+                        # since the original handling layer has a corresponding try-catch, it together with the next ones can't be a fo_point 
+                        if handler_class_name in layer and handler_method_name in layer: break
                         layer_info = stackinfo_pattern.search(layer)
                         fo_point.append(str(distance) + ": " + layer_info.group(1) + "/" + layer_info.group(2) + " - " + layer_info.group(3))
                         distance = distance + 1
-                        if handler_class_name in layer and handler_method_name in layer: break
                 else:
                     handled_by = "not handled"
                     for index, layer in enumerate(stack_layers):
