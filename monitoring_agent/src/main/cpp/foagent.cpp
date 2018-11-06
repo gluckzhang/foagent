@@ -60,7 +60,7 @@ static void JNICALL callbackException(jvmtiEnv *jvmti_env, JNIEnv *env, jthread 
     {
         char localTime[80];
         ofstream logFileStream;
-        logFileStream.open(logfileName, ios::out | ios::trunc);
+        logFileStream.open(logfileName, ios::app);
 
         char *name,*methodSig,*sig,*gsig;
         jvmtiError error = gb_jvmti->GetMethodName(method, &name, &methodSig, &gsig);
