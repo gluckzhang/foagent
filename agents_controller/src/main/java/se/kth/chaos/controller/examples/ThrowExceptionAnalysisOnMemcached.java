@@ -27,6 +27,7 @@ public class ThrowExceptionAnalysisOnMemcached {
 
             try {
                 for (int client = 0; client < rootPath.length; client++) {
+                    System.out.println("[AGENT_CONTROLLER] Analysis on " + rootPath[client]);
                     String command = String.format("java -noverify -javaagent:%s=mode:throw_e," +
                                     "defaultMode:analysis,filter:%s -jar %s 2>&1",
                             javaagentPath, analysisFilter[client].replace("$", "\\$"), threadName[client]);
@@ -56,9 +57,12 @@ public class ThrowExceptionAnalysisOnMemcached {
                             } else {
                                 pointsMap.put(key, 1);
                             }
-                        }  else if (line.contains(endingPattern)) {
-                            process.destroy();
-                            break;
+                        }  else if (line.startsWith("threads=")) {
+                            System.out.println("[AGENT_CONTROLLER] " + line);
+                            if (line.contains(endingPattern)) {
+                                process.destroy();
+                                break;
+                            }
                         }
                     }
 
