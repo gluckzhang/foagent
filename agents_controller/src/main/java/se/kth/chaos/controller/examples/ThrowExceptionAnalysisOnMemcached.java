@@ -112,7 +112,7 @@ public class ThrowExceptionAnalysisOnMemcached {
             task.add("run times in normal"); // index should be 10
             task.add("run times in injection");
             task.add("injection captured in the business log");
-            task.add("tps and hitRate");
+            task.add("tps");
             task.add("exit status");
             task.add("process cpu time(in seconds)");
             task.add("average memory usage(in MB)");
