@@ -131,13 +131,13 @@ def analyze_log(filepath):
 
                 key = get_md5_key(class_name + method_name + exception_type + handled_by + str(injected_exception))
                 if key in result:
-                    count = result[key][4]
+                    count = result[key][5]
                     count = count + 1
-                    result[key][4] = count
+                    result[key][5] = count
                 else:
                     count = 1
                     result[key] = list()
-                    result[key].append(os.path.splitext(logfile)[0])
+                    result[key].append(os.path.splitext(os.path.basename(filepath))[0])
                     result[key].append(class_name)
                     result[key].append(method_name)
                     result[key].append(method_signature)
