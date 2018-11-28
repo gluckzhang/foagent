@@ -31,6 +31,7 @@ public class ThrowExceptionAnalysisOnTTorrent {
                 String command = String.format("timeout --signal=9 %s java -noverify -javaagent:%s=mode:throw_e," +
                                 "defaultMode:analysis,filter:%s -jar %s -o . -s 0 ubuntu-14.04.5-server-i386.iso.torrent 2>&1",
                         timeout, javaagentPath, analysisFilter.replace("$", "\\$"), threadName);
+                System.out.println("[AGENT_CONTROLLER] command: " + command);
                 process = Runtime.getRuntime().exec(new String[]{"bash", "-c", command}, null, new File(rootPath));
 
                 int input_pid = JMXMonitoringTool.getPidByThreadName(threadName);

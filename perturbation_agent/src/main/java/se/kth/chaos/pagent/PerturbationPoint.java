@@ -37,6 +37,14 @@ public class PerturbationPoint {
                              String defaultMode, int perturbationCountdown, double chanceOfFailure) {
         this(className, methodName, methodSignature, indexNumber, defaultMode, perturbationCountdown, chanceOfFailure);
         this.exceptionType = exceptionType;
+        // for throw_e strategy, we use className+methodName+exceptionType to calculate the key
+        MessageDigest mDigest = null;
+        try {
+            mDigest = MessageDigest.getInstance("MD5");
+            this.key = byteArrayToHex(mDigest.digest((className + methodName + exceptionType).getBytes()));
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
     }
 
     private static String byteArrayToHex(byte[] byteArray) {

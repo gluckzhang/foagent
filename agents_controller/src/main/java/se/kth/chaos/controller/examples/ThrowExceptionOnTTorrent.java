@@ -9,7 +9,7 @@ import java.util.*;
 public class ThrowExceptionOnTTorrent {
     public static void main(String[] args) {
         Process process = null;
-        String rootPath = "ttorrent_evaluation_1.5/throw_exception_typical";
+        String rootPath = "ttorrent_evaluation_1.5/throw_exception_fo";
         String javaagentPath = System.getProperty("user.dir") + "/../perturbation_agent/target/foagent-perturbation-jar-with-dependencies.jar";
         String monitoringAgentPath = System.getProperty("user.dir") + "/../monitoring_agent/src/main/cpp/foagent.so";
         String endingPattern = "BitTorrent client signing off";
@@ -64,6 +64,7 @@ public class ThrowExceptionOnTTorrent {
                                 timeout, javaagentPath, mode, filter.replace("$", "\\$"), exceptionType,
                                 injections, rate, threadName);
                     }
+                    System.out.println("[AGENT_CONTROLLER] command: " + command);
 
                     process = Runtime.getRuntime().exec(new String[]{"bash", "-c", command}, null, new File(rootPath));
 
@@ -143,7 +144,7 @@ public class ThrowExceptionOnTTorrent {
                     if (monitoringAgentOn) {
                         // rename the monitoring agent log
                         targetFile = new File(rootPath + "/monitoring_agent.log");
-                        targetFile.renameTo(new File(rootPath + "/" + filter.replace("/", "_") + ".log"));
+                        targetFile.renameTo(new File(rootPath + "/" + task.get(0) + ".log"));
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
