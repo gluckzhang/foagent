@@ -137,6 +137,7 @@ def analyze_log(filepath):
                 else:
                     count = 1
                     result[key] = list()
+                    result[key].append(os.path.splitext(logfile)[0])
                     result[key].append(class_name)
                     result[key].append(method_name)
                     result[key].append(method_signature)
@@ -171,7 +172,7 @@ def analyze_log_folder(path):
 def write2csv(filename, dataset):
     with open(filename, 'w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["className", "methodName", "methodSignature", "exceptionType", "count", "handledBy", "distance", "stackHeight", "foPoint", "normally happened"])
+        writer.writerow(["key", "className", "methodName", "methodSignature", "exceptionType", "count", "handledBy", "distance", "stackHeight", "foPoint", "normally happened"])
         for line in dataset:
             writer.writerow(dataset[line])
 
