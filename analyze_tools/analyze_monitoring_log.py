@@ -147,6 +147,7 @@ def analyze_log(filepath):
                     result[key].append(distance)
                     result[key].append(stack_height)
                     result[key].append(" | ".join(fo_point))
+                    result[key].append(len(fo_point))
                     if (injected_exception):
                         result[key].append("no")
                     else:
@@ -172,7 +173,7 @@ def analyze_log_folder(path):
 def write2csv(filename, dataset):
     with open(filename, 'w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["key", "className", "methodName", "methodSignature", "exceptionType", "count", "handledBy", "distance", "stackHeight", "foPoint", "normally happened"])
+        writer.writerow(["key", "className", "methodName", "methodSignature", "exceptionType", "count", "handledBy", "distance", "stackHeight", "foPoint", "foPointCount", "normally happened"])
         for line in dataset:
             writer.writerow(dataset[line])
 
