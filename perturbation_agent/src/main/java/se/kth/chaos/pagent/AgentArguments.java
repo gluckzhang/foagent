@@ -13,12 +13,12 @@ public class AgentArguments {
     private double chanceOfFailure;
     private FilterByClassAndMethodName filter;
     private FilterByExceptionType exceptionFilter;
+    private String lineNumber;
     private String configFile;
-    private String memcachedHost;
-    private int memcachedPort;
     private String csvfilepath;
     private String defaultMode;
     private int perturbationCountdown;
+    private int interval;
 
     public AgentArguments(String args) {
         Map<String, String> configuration = argumentMap(args == null ? "" : args);
@@ -27,12 +27,12 @@ public class AgentArguments {
         this.chanceOfFailure = Double.valueOf(configuration.getOrDefault("rate", "1"));
         this.filter = new FilterByClassAndMethodName(configuration.getOrDefault("filter", ".*"));
         this.exceptionFilter = new FilterByExceptionType(configuration.getOrDefault("efilter", ".*"));
+        this.lineNumber = configuration.getOrDefault("lineNumber", "*");
         this.configFile = configuration.getOrDefault("config", null);
-        this.memcachedHost = configuration.getOrDefault("memcachedHost", "localhost");
-        this.memcachedPort = Integer.valueOf(configuration.getOrDefault("memcachedPort", "11211"));
         this.csvfilepath = configuration.getOrDefault("csvfilepath", "perturbationPointsList.csv");
         this.defaultMode = configuration.getOrDefault("defaultMode", "off");
-        this.perturbationCountdown = Integer.valueOf(configuration.getOrDefault("countdown", "1"));
+        this.perturbationCountdown = Integer.valueOf(configuration.getOrDefault("countdown", "-1"));
+        this.interval = Integer.valueOf(configuration.getOrDefault("interval", "1"));
 
         if (this.configFile != null) {
             refreshConfig();
@@ -71,11 +71,11 @@ public class AgentArguments {
             this.chanceOfFailure = Double.valueOf(p.getProperty("rate", "1"));
             this.filter = new FilterByClassAndMethodName(p.getProperty("filter", ".*"));
             this.exceptionFilter = new FilterByExceptionType(p.getProperty("efilter", ".*"));
-            this.memcachedHost = p.getProperty("memcachedHost", "localhost");
-            this.memcachedPort = Integer.valueOf(p.getProperty("memcachedPort", "11211"));
+            this.lineNumber = p.getProperty("lineNumber", "*");
             this.csvfilepath = p.getProperty("csvfilepath", "perturbationPointsList.csv");
             this.defaultMode = p.getProperty("defaultMode", "off");
             this.perturbationCountdown = Integer.valueOf(p.getProperty("countdown", "1"));
+            this.interval = Integer.valueOf(p.getProperty("interval", "1"));
             inputStream.close();
         } catch (Exception e) {
             e.printStackTrace();
@@ -117,18 +117,11 @@ public class AgentArguments {
         return exceptionFilter;
     }
 
-    public String memcachedHost() {
+    public String lineNumber() {
         if (this.configFile != null) {
             refreshConfig();
         }
-        return memcachedHost;
-    }
-
-    public int memcachedPort() {
-        if (this.configFile != null) {
-            refreshConfig();
-        }
-        return memcachedPort;
+        return lineNumber;
     }
 
     public String csvfilepath() {
@@ -150,5 +143,12 @@ public class AgentArguments {
             refreshConfig();
         }
         return perturbationCountdown;
+    }
+
+    public int interval() {
+        if (this.configFile != null) {
+            refreshConfig();
+        }
+        return interval;
     }
 }

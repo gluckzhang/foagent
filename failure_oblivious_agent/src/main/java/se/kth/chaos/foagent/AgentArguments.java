@@ -8,23 +8,19 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 public class AgentArguments {
-    private int tcIndex;
     private OperationMode operationMode;
     private FilterByClassAndMethodName filter;
+    private FilterByMethodDescription methodDesc;
     private String configFile;
-    private String memcachedHost;
-    private int memcachedPort;
     private String csvfilepath;
     private String defaultMode;
 
     public AgentArguments(String args) {
         Map<String, String> configuration = argumentMap(args == null ? "" : args);
-        this.tcIndex = Integer.valueOf(configuration.getOrDefault("tcindex", "-1"));
         this.operationMode = OperationMode.fromLowerCase(configuration.getOrDefault("mode", OperationMode.FO.name()));
         this.filter = new FilterByClassAndMethodName(configuration.getOrDefault("filter", ".*"));
+        this.methodDesc = new FilterByMethodDescription(configuration.getOrDefault("methodDesc", ".*"));
         this.configFile = configuration.getOrDefault("config", null);
-        this.memcachedHost = configuration.getOrDefault("memcachedHost", "localhost");
-        this.memcachedPort = Integer.valueOf(configuration.getOrDefault("memcachedPort", "11211"));
         this.csvfilepath = configuration.getOrDefault("csvfilepath", "failureObliviousPointsList.csv");
         this.defaultMode = configuration.getOrDefault("defaultMode", "fo");
 
@@ -33,10 +29,10 @@ public class AgentArguments {
         }
     }
 
-    public AgentArguments(long latency, double activationRatio, int tcIndex, String operationMode, String filter, String configFile) {
-        this.tcIndex = tcIndex;
+    public AgentArguments(long latency, double activationRatio, String operationMode, String filter, String methodDesc, String configFile) {
         this.operationMode = OperationMode.fromLowerCase(operationMode);
         this.filter = new FilterByClassAndMethodName(filter);
+        this.methodDesc = new FilterByMethodDescription(methodDesc);
         this.configFile = configFile;
 
         if (this.configFile != null) {
@@ -60,24 +56,15 @@ public class AgentArguments {
         try {
             InputStream inputStream = new FileInputStream(this.configFile);
             p.load(inputStream);
-            this.tcIndex = Integer.valueOf(p.getProperty("tcindex", "-1"));
             this.operationMode = OperationMode.fromLowerCase(p.getProperty("mode", OperationMode.FO.name()));
             this.filter = new FilterByClassAndMethodName(p.getProperty("filter", ".*"));
-            this.memcachedHost = p.getProperty("memcachedHost", "localhost");
-            this.memcachedPort = Integer.valueOf(p.getProperty("memcachedPort", "11211"));
+            this.methodDesc = new FilterByMethodDescription(p.getProperty("methodDesc", ".*"));
             this.csvfilepath = p.getProperty("csvfilepath", "failureObliviousPointsList.csv");
             this.defaultMode = p.getProperty("defaultMode", "fo");
             inputStream.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-     public int tcIndex() {
-        if (this.configFile != null) {
-            refreshConfig();
-        }
-        return tcIndex;
     }
 
     public OperationMode operationMode() {
@@ -94,18 +81,11 @@ public class AgentArguments {
         return filter;
     }
 
-    public String memcachedHost() {
+    public FilterByMethodDescription methodDesc() {
         if (this.configFile != null) {
             refreshConfig();
         }
-        return memcachedHost;
-    }
-
-    public int memcachedPort() {
-        if (this.configFile != null) {
-            refreshConfig();
-        }
-        return memcachedPort;
+        return methodDesc;
     }
 
     public String csvfilepath() {

@@ -38,7 +38,7 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
                         .filter(method -> !method.name.startsWith("<"))
                         .filter(method -> arguments.filter().matches(classNode.name, method.name))
                         .forEach(method -> {
-                            int indexNumber = 0;
+                            int exceptionIndexNumber = 0;
                             InsnList insnList = method.instructions;
                             for (AbstractInsnNode node : insnList.toArray()) {
                                 if (node.getOpcode() >= Opcodes.IALOAD && node.getOpcode() <= Opcodes.AALOAD) {
@@ -56,10 +56,10 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
 
                                     System.err.println("INFO PerturbationAgent the array index is:" + readingIndex);
 
-                                    PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, method.desc, indexNumber,
-                                            arguments.defaultMode(), 0, arguments.chanceOfFailure());
+                                    PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, method.desc, exceptionIndexNumber,
+                                            arguments.defaultMode(), 0, arguments.chanceOfFailure(), arguments.interval());
                                     PAgent.registerPerturbationPoint(perturbationPoint, arguments);
-                                    indexNumber = indexNumber + 1;
+                                    exceptionIndexNumber = exceptionIndexNumber + 1;
                                 }
                             }
                         });
@@ -90,7 +90,7 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
 
                                 // System.out.println("INFO PerturbationAgent the array index is:" + readingIndex);
                                 PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, method.desc, indexNumber,
-                                        arguments.defaultMode(), arguments.countdown(), arguments.chanceOfFailure());
+                                        arguments.defaultMode(), arguments.countdown(), arguments.chanceOfFailure(), arguments.interval());
                                 PAgent.registerPerturbationPoint(perturbationPoint, arguments);
                                 insnList.insertBefore(node, arguments.operationMode().generateByteCode(classNode, method, arguments, perturbationPoint));
                                 indexNumber = indexNumber + 1;
@@ -108,8 +108,8 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
                         for (TryCatchBlockNode tc : method.tryCatchBlocks) {
                             if (tc.type.equals("null")) continue; // "synchronized" keyword or try-finally block might make the type empty
                             if (inTimeoutExceptionList(tc.type)) {
-                                PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, method.desc, indexNumber, tc.type,
-                                        arguments.defaultMode(), arguments.countdown(), arguments.chanceOfFailure());
+                                PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, method.desc, indexNumber, tc.type, 0,
+                                        arguments.defaultMode(), arguments.countdown(), arguments.chanceOfFailure(), arguments.interval());
                                 PAgent.registerPerturbationPoint(perturbationPoint, arguments);
                                 InsnList newInstructions = arguments.operationMode().generateByteCode(classNode, method, arguments, perturbationPoint);
                                 method.instructions.insert(tc.start, newInstructions);
@@ -124,15 +124,63 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
                     .filter(method -> arguments.filter().matches(classNode.name, method.name))
                     .filter(method -> method.exceptions.size() > 0)
                     .forEach(method -> {
-                        int indexNumber = 0;
+                        int exceptionIndexNumber = 0;
+                        InsnList originalInsnList = this.copyInsn(method.instructions);
                         for (String exception : method.exceptions) {
                             if (arguments.exceptionFilter().matches(exception)) {
-                                PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, method.desc, indexNumber, exception,
-                                        arguments.defaultMode(), arguments.countdown(), arguments.chanceOfFailure());
-                                PAgent.registerPerturbationPoint(perturbationPoint, arguments);
-                                InsnList newInstructions = arguments.operationMode().generateByteCode(classNode, method, arguments, perturbationPoint);
-                                method.instructions.insertBefore(method.instructions.getFirst(), newInstructions);
-                                indexNumber = indexNumber + 1;
+                                switch (arguments.lineNumber()) {
+                                    case "*": {
+                                        for (int i = 0; i < originalInsnList.size(); i++) {
+                                            AbstractInsnNode currentNode = originalInsnList.get(i);
+                                            if (currentNode instanceof LineNumberNode) {
+                                                method.instructions.insertBefore(currentNode,
+                                                        this.constructPerturbationPoints(classNode, method,
+                                                                exceptionIndexNumber, exception,
+                                                                ((LineNumberNode)currentNode).line));
+                                            }
+                                        }
+                                        break;
+                                    }
+
+                                    case "0": {
+                                        AbstractInsnNode firstLineNumberNode = this.getFirstOrLastLineNumberNode(originalInsnList, false);
+                                        if (firstLineNumberNode != null) {
+                                            method.instructions.insertBefore(firstLineNumberNode,
+                                                    this.constructPerturbationPoints(classNode, method,
+                                                            exceptionIndexNumber, exception,
+                                                            ((LineNumberNode)firstLineNumberNode).line));
+                                        }
+                                        break;
+                                    }
+
+                                    case "$": {
+                                        AbstractInsnNode lastLineNumberNode = this.getFirstOrLastLineNumberNode(originalInsnList, true);
+                                        if (lastLineNumberNode != null) {
+                                            method.instructions.insertBefore(lastLineNumberNode,
+                                                    this.constructPerturbationPoints(classNode, method,
+                                                            exceptionIndexNumber, exception,
+                                                            ((LineNumberNode)lastLineNumberNode).line));
+                                        }
+                                        break;
+                                    }
+
+                                    default: {
+                                        for (int i = 0; i < originalInsnList.size(); i++) {
+                                            AbstractInsnNode currentNode = originalInsnList.get(i);
+                                            if (currentNode instanceof LineNumberNode) {
+                                                int line = ((LineNumberNode)currentNode).line;
+                                                if (arguments.lineNumber().equals(line + "")) {
+                                                    method.instructions.insertBefore(currentNode,
+                                                            this.constructPerturbationPoints(classNode, method,
+                                                                    exceptionIndexNumber, exception,
+                                                                    line));
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                exceptionIndexNumber = exceptionIndexNumber + 1;
                             }
                         }
                     });
@@ -188,5 +236,34 @@ public class PerturbationAgentClassTransformer implements ClassFileTransformer {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private InsnList copyInsn(InsnList origin) {
+        InsnList result = new InsnList();
+        for (int i = 0; i < origin.size(); i++) {
+            result.add(origin.get(i));
+        }
+        return result;
+    }
+
+    private AbstractInsnNode getFirstOrLastLineNumberNode(InsnList insnList, boolean reverse) {
+        AbstractInsnNode result = null;
+        for (int i = 0; i < insnList.size(); i++) {
+            AbstractInsnNode currentNode = insnList.get(i);
+            if (currentNode instanceof LineNumberNode) {
+                result = currentNode;
+                if (!reverse) break;
+            }
+        }
+        return result;
+    }
+
+    private InsnList constructPerturbationPoints(ClassNode classNode, MethodNode method, int exceptionIndexNumber,
+            String exceptionType, int lineNumberIndex) {
+        PerturbationPoint perturbationPoint = new PerturbationPoint(classNode.name, method.name, method.desc,
+                exceptionIndexNumber, exceptionType, lineNumberIndex, arguments.defaultMode(),
+                arguments.countdown(), arguments.chanceOfFailure(), arguments.interval());
+        PAgent.registerPerturbationPoint(perturbationPoint, arguments);
+        return arguments.operationMode().generateByteCode(classNode, method, arguments, perturbationPoint);
     }
 }

@@ -36,18 +36,34 @@ public class PAgent {
         PerturbationPoint perturbationPoint = perturbationPointsMap.getOrDefault(perturbationPointKey, null);
 
         if (perturbationPoint != null) {
+            perturbationPoint.invocationCount = perturbationPoint.invocationCount + 1;
             if (perturbationPoint.mode.equals("analysis")) {
-                System.out.printf("INFO PAgent a method which throws an exception executed in %s/%s(%s), key: %s\n",
-                        perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.exceptionType, perturbationPoint.key);
+                System.out.printf("INFO PAgent a method which throws an exception executed in %s/%s(%s), lineNumber: %s, key: %s\n",
+                        perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.exceptionType,
+                        perturbationPoint.lineIndexNumber, perturbationPoint.key);
+            } else if (perturbationPoint.mode.equals("coverage")) {
+                // coverage information only needs to output once
+                if (perturbationPoint.covered == false) {
+                    System.out.printf("INFO PAgent a method which throws an exception executed in %s/%s(%s), lineNumber: %s, key: %s\n",
+                            perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.exceptionType,
+                            perturbationPoint.lineIndexNumber, perturbationPoint.key);
+                    perturbationPoint.covered = true;
+                }
             } else if (perturbationPoint.mode.equals("throw_e")) {
-                if (perturbationPoint.perturbationCountdown > 0 && shouldActivate(perturbationPoint.chanceOfFailure)) {
-                    System.out.printf("INFO PAgent throw exception perturbation activated in %s/%s(%s), countDown: %d\n",
-                            perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.exceptionType, perturbationPoint.perturbationCountdown);
-                    perturbationPoint.perturbationCountdown = perturbationPoint.perturbationCountdown - 1;
-                    throw throwOrDefault(perturbationPoint);
+                if (perturbationPoint.perturbationCountdown != 0
+                    && shouldActivate(perturbationPoint.chanceOfFailure)
+                    && (perturbationPoint.interval == 1 || perturbationPoint.invocationCount % perturbationPoint.interval == 1)) {
+                        System.out.printf("INFO PAgent throw exception perturbation activated in %s/%s(%s), lineNumber: %s, countDown: %d\n",
+                            perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.exceptionType,
+                            perturbationPoint.lineIndexNumber, perturbationPoint.perturbationCountdown);
+                        if (perturbationPoint.perturbationCountdown > 0) {
+                            perturbationPoint.perturbationCountdown = perturbationPoint.perturbationCountdown - 1;
+                        }
+                        throw throwOrDefault(perturbationPoint);
                 } else {
-                    System.out.printf("INFO PAgent throw exception perturbation executed normally in %s/%s(%s), countDown: %d\n",
-                            perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.exceptionType, perturbationPoint.perturbationCountdown);
+                    System.out.printf("INFO PAgent throw exception perturbation executed normally in %s/%s(%s), lineNumber: %s, countDown: %d\n",
+                            perturbationPoint.className, perturbationPoint.methodName, perturbationPoint.exceptionType,
+                            perturbationPoint.lineIndexNumber, perturbationPoint.perturbationCountdown);
                 }
             }
         }
@@ -129,16 +145,16 @@ public class PAgent {
                 PrintWriter out = null;
                 if (csvFile.exists()) {
                     out = new PrintWriter(new FileWriter(csvFile, true));
-                    out.println(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className,
-                            perturbationPoint.methodName, perturbationPoint.methodSignature, perturbationPoint.exceptionType, perturbationPoint.indexNumber,
-                            perturbationPoint.perturbationCountdown, perturbationPoint.chanceOfFailure, perturbationPoint.mode));
+                    out.println(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className,
+                            perturbationPoint.methodName, perturbationPoint.methodSignature, perturbationPoint.exceptionType, perturbationPoint.exceptionIndexNumber,
+                            perturbationPoint.lineIndexNumber, perturbationPoint.perturbationCountdown, perturbationPoint.chanceOfFailure, perturbationPoint.mode));
                 } else {
                     csvFile.createNewFile();
                     out = new PrintWriter(new FileWriter(csvFile));
-                    out.println("key,className,methodName,methodSignature,exceptionType,indexNumber,countdown,rate,mode");
-                    out.println(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className,
-                            perturbationPoint.methodName, perturbationPoint.methodSignature, perturbationPoint.exceptionType, perturbationPoint.indexNumber,
-                            perturbationPoint.perturbationCountdown, perturbationPoint.chanceOfFailure, perturbationPoint.mode));
+                    out.println("key,className,methodName,methodSignature,exceptionType,exceptionIndexNumber,lineIndexNumber,countdown,rate,mode");
+                    out.println(String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s", perturbationPoint.key, perturbationPoint.className,
+                            perturbationPoint.methodName, perturbationPoint.methodSignature, perturbationPoint.exceptionType, perturbationPoint.exceptionIndexNumber,
+                            perturbationPoint.lineIndexNumber, perturbationPoint.perturbationCountdown, perturbationPoint.chanceOfFailure, perturbationPoint.mode));
                 }
                 out.flush();
                 out.close();
@@ -189,8 +205,12 @@ public class PAgent {
         for (int i = 1; i < perturbationPoints.size(); i++) {
             String[] line = perturbationPoints.get(i);
             PerturbationPoint perturbationPoint = perturbationPointsMap.get(line[0]);
-            if (perturbationPoint != null) {
-                perturbationPoint.mode = line[8];
+            if (perturbationPoint != null && !perturbationPoint.mode.equals(line[9])) {
+                // we only update countdown, chanceOfFailure and invocationCount when mode changes
+                perturbationPoint.perturbationCountdown = Integer.valueOf(line[7]);
+                perturbationPoint.chanceOfFailure = Double.valueOf(line[8]);
+                perturbationPoint.invocationCount = 0;
+                perturbationPoint.mode = line[9];
                 perturbationPointsMap.put(line[0], perturbationPoint);
             }
         }

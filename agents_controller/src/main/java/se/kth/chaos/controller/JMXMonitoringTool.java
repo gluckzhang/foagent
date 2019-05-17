@@ -26,7 +26,6 @@ public class JMXMonitoringTool {
     }
 
     public static void monitorProcessByPid(int pid, int interval) {
-        processCpuTime = 0;
         averageMemoryUsage = 0;
         peakThreadCount = 0;
 
@@ -84,7 +83,7 @@ public class JMXMonitoringTool {
                 tempMemory = tempMemory + Long.parseLong(cd.get("used").toString());
 
                 osMbean = jmxc.getMBeanServerConnection().getAttribute(new ObjectName("java.lang:type=OperatingSystem"),"ProcessCpuTime");
-                processCpuTime += Long.parseLong(osMbean.toString());
+                processCpuTime = Long.parseLong(osMbean.toString());
 
                 threadMbean = jmxc.getMBeanServerConnection().getAttribute(new ObjectName("java.lang:type=Threading"),"ThreadCount");
                 int tPeakThreadCount = Integer.valueOf(threadMbean.toString());
@@ -149,6 +148,27 @@ public class JMXMonitoringTool {
             }
         } catch (IOException e) {
             e.printStackTrace();
+        }
+
+        return pid;
+    }
+
+    public static int getPidFromFile(String filePath) {
+        int pid = -1;
+        String pid_str = null;
+
+        try {
+            FileInputStream inputStream = new FileInputStream(filePath);
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+            pid_str = bufferedReader.readLine();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        if (pid_str != null) {
+            pid = Integer.valueOf(pid_str);
         }
 
         return pid;
